@@ -26,7 +26,7 @@ namespace rendering::dx
 	
 	void on_frame(IDXGISwapChain* swap_chain)
 	{
-		if (const auto window = game::window; window)
+		if (const auto window{ game::window }; window)
 		{
 			input::initialize(window);
 

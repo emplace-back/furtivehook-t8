@@ -47,7 +47,7 @@ namespace input
 
 	long __stdcall wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
-		auto should_ignore = menu::is_open() && !ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam);
+		auto should_ignore{ menu::is_open() && !ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam) };
 
 		if (msg == WM_CLOSE)
 		{

@@ -51,7 +51,7 @@ namespace menu
 
 	void set_style()
 	{
-		auto& style = ImGui::GetStyle();
+		auto& style{ ImGui::GetStyle() };
 		ImGui::GetIO().FontDefault = ImGui::GetIO().Fonts->AddFontDefault();
 
 		set_style_color();
@@ -110,6 +110,187 @@ namespace menu
 		return true;
 	}
 
+	void draw_player_list(const float width, const float spacing)
+	{
+		if (ImGui::BeginTabItem("Player List"))
+		{
+			const auto session{ game::session };
+
+			if (session == nullptr)
+			{
+				return;
+			}
+			
+			ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
+			ImGui::BeginColumns("Players", 3, ImGuiColumnsFlags_NoResize);
+
+			ImGui::SetColumnWidth(-1, 28.0f);
+			ImGui::TextUnformatted("#");
+			ImGui::NextColumn();
+			ImGui::TextUnformatted("Player");
+			ImGui::NextColumn();
+			ImGui::SetColumnOffset(-1, width - ImGui::CalcTextSize("Priority").x);
+			ImGui::TextUnformatted("Priority");
+			ImGui::NextColumn();
+
+			ImGui::Separator();
+
+			std::array<std::uint32_t, 18> indices = {};
+
+			for (size_t i = 0; i < 18; ++i)
+			{
+				indices[i] = i;
+			}
+
+			for (const auto& client_num : indices)
+			{
+				const auto target_client{ game::LobbySession_GetClientByClientNum(session, client_num) };
+
+				if (target_client && target_client->activeClient)
+				{
+					ImGui::AlignTextToFramePadding();
+					ImGui::TextUnformatted(std::to_string(client_num).data());
+
+					ImGui::NextColumn();
+
+					const auto player_xuid{ target_client->activeClient->xuid };
+					const auto player_name{ target_client->activeClient->gamertag };
+
+					ImGui::PushStyleColor(ImGuiCol_Text, game::LiveUser_IsXUIDLocalPlayer(player_xuid)
+						? ImColor(0, 255, 127, 250).Value : ImColor(200, 200, 200, 250).Value);
+
+					ImGui::AlignTextToFramePadding();
+
+					const auto selected{ ImGui::Selectable((player_name + "##"s + std::to_string(client_num)).data()) };
+
+					ImGui::PopStyleColor();
+
+					const auto netadr{ target_client->activeClient->sessionInfo[session->type].netAdr };
+					const auto is_bot{ netadr.type == game::NA_BOT };
+
+					if (is_bot)
+					{
+						ImGui::SameLine(0, spacing);
+
+						ImGui::TextColored(ImColor(200, 200, 200, 250).Value, "[BOT]");
+					}
+					
+					const auto popup{ "player_popup##" + std::to_string(client_num) };
+					static auto friend_player_name{ ""s };
+
+					if (selected)
+					{
+						friend_player_name = player_name;
+
+						ImGui::OpenPopup(popup.data());
+					}
+
+					const auto ip_string{ utils::string::adr_to_string(&netadr) };
+					
+					if (ImGui::BeginPopup(popup.data(), ImGuiWindowFlags_NoMove))
+					{
+						if (ImGui::BeginMenu(player_name + "##"s + std::to_string(client_num) + "player_menu"))
+						{
+							ImGui::MenuItem(player_name + "##"s + std::to_string(client_num) + "player_menu_item", nullptr, false, false);
+
+							if (ImGui::IsItemClicked())
+							{
+								ImGui::LogToClipboardUnformatted(player_name);
+							}
+
+							if (ImGui::IsItemHovered())
+							{
+								ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+							}
+
+							if (ImGui::BeginMenu("Add to friends list##" + std::to_string(client_num)))
+							{
+								ImGui::InputTextWithHint("##" + std::to_string(client_num), "Name", &friend_player_name);
+
+								if (ImGui::Button("Add friend"))
+								{
+									friends::friends.emplace_back(friends::friends_t{ player_xuid, friend_player_name });
+									friends::write_to_friends();
+								}
+
+								ImGui::EndMenu();
+							}
+
+							ImGui::EndMenu();
+						}
+
+						ImGui::Separator();
+
+						if (ImGui::MenuItem(std::to_string(player_xuid)))
+						{
+							ImGui::LogToClipboardUnformatted(std::to_string(player_xuid));
+						}
+
+						if (ImGui::MenuItem(ip_string))
+						{
+							ImGui::LogToClipboardUnformatted(ip_string);
+						}
+
+						ImGui::Separator();
+
+						if (ImGui::MenuItem("Crash player", nullptr, nullptr, !is_bot))
+						{
+							exploit::instant_message::send_info_response_overflow(player_xuid);
+
+							exploit::send_crash(netadr);
+						}
+
+						if (ImGui::BeginMenu("Exploits##" + std::to_string(client_num), !is_bot))
+						{
+							if (ImGui::MenuItem("Show migration screen"))
+							{
+								exploit::send_mstart_packet(netadr);
+							}
+
+							if (ImGui::MenuItem("Kick from lobby"))
+							{
+								exploit::send_connect_response_migration_packet(netadr);
+							}
+
+							if (ImGui::BeginMenu("Send OOB##" + std::to_string(client_num)))
+							{
+								static auto string_input{ ""s };
+
+								ImGui::InputTextWithHint("##" + std::to_string(client_num), "OOB", &string_input);
+
+								if (ImGui::MenuItem("Send OOB"))
+								{
+									game::oob::send(netadr, string_input);
+								}
+
+								ImGui::EndMenu();
+							}
+
+							ImGui::EndMenu();
+						}
+
+						ImGui::EndPopup();
+					}
+
+					ImGui::NextColumn();
+
+					ImGui::TextUnformatted("");
+
+					ImGui::NextColumn();
+
+					if (ImGui::GetColumnIndex() == 0)
+					{
+						ImGui::Separator();
+					}
+				}
+			}
+
+			ImGui::PopStyleVar();
+			ImGui::EndColumns();
+			ImGui::EndTabItem();
+		}
+	}
+
 	void draw()
 	{
 		if (is_open())
@@ -124,8 +305,8 @@ namespace menu
 
 			if (ImGui::BeginTabBar("tabs"))
 			{
-				const auto width = ImGui::GetContentRegionAvail().x;
-				const auto spacing = ImGui::GetStyle().ItemInnerSpacing.x; 
+				const auto width{ ImGui::GetContentRegionAvail().x };
+				const auto spacing{ ImGui::GetStyle().ItemInnerSpacing.x };
 				
 				ImGui::Separator();
 
@@ -133,10 +314,11 @@ namespace menu
 				{
 					ImGui::Checkbox("Log out-of-band packets", &events::connectionless_packet::log_packets); 
 					ImGui::Checkbox("Log instant messages", &events::instant_message::dispatch::log_messages);
+					ImGui::Checkbox("Log lobby messages", &events::lobby_msg::log_messages);
 					
 					if (ImGui::CollapsingHeader("Exploits", ImGuiTreeNodeFlags_Leaf))
 					{
-						static auto steam_id_input = ""s;
+						static auto steam_id_input{ ""s };
 
 						ImGui::SetNextItemWidth(width * 0.85f);
 						ImGui::InputTextWithHint("##target_steam_id", "ID", &steam_id_input);
@@ -171,7 +353,7 @@ namespace menu
 					{
 						if (begin_section("Execute command"))
 						{
-							static auto command_input = ""s;
+							static auto command_input{ ""s };
 
 							ImGui::SetNextItemWidth(width * 0.85f);
 							ImGui::InputTextWithHint("##command_input", "Command", &command_input);
@@ -188,7 +370,8 @@ namespace menu
 					ImGui::EndTabItem();
 				}
 
-				friends::draw_friends_list(width, spacing); 
+				draw_player_list(width, spacing);
+				friends::draw_friends_list(width, spacing);
 			}
 		}
 	}

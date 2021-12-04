@@ -30,7 +30,6 @@ namespace friends
 			j[std::to_string(friends.id)] =
 			{
 				{ "name", friends.name },
-				{ "ip_data", friends.ip_data },
 				{ "last_online", friends.last_online },
 			};
 		}
@@ -50,7 +49,6 @@ namespace friends
 				{
 					std::stoull(key),
 					value["name"].get<std::string>(),
-					value["ip_data"].get<std::string>(),
 					value["last_online"].get<std::int64_t>(),
 				});
 			}
@@ -73,9 +71,9 @@ namespace friends
 	{
 		if (ImGui::BeginTabItem("Friends"))
 		{
-			const auto popup = "Add friend##add_friend_popup"s;
+			const auto popup{ "Add friend##add_friend_popup"s };
 
-			static ImGuiTextFilter filter;
+			static ImGuiTextFilter filter{};
 			
 			ImGui::TextUnformatted("Search friends");
 			filter.Draw("##search_friend", "Name", width * 0.85f);
@@ -91,26 +89,19 @@ namespace friends
 
 			if (ImGui::BeginPopupModal(popup.data(), nullptr, ImGuiWindowFlags_NoResize))
 			{
-				static auto name_input = ""s;
-				static auto id_input = ""s;
-				static auto ip_data_input = ""s;
+				static auto name_input{ ""s };
+				static auto id_input{ ""s };
+				static auto ip_data_input{ ""s };
 
-				ImGui::AlignTextToFramePadding(); 
-				
 				ImGui::SetNextItemWidth(width * 0.5f);
 				ImGui::InputTextWithHint("##name_input", "Name", &name_input);
 
 				ImGui::SetNextItemWidth(width * 0.5f);
 				ImGui::InputTextWithHint("##id_input", "ID", &id_input);
 
-				ImGui::AlignTextToFramePadding(); 
-				
-				ImGui::SetNextItemWidth(width * 0.5f);
-				ImGui::InputTextWithHint("##ip_data_input", "IP Address", &ip_data_input);
-
 				if (ImGui::MenuItem("Add friend", nullptr, nullptr, !name_input.empty() && !id_input.empty()))
 				{
-					friends.emplace_back(friends_t{ utils::atoll(id_input), name_input, ip_data_input });
+					friends.emplace_back(friends_t{ utils::atoll(id_input), name_input });
 					write_to_friends();
 
 					ImGui::CloseCurrentPopup();
@@ -160,8 +151,9 @@ namespace friends
 
 			for (const auto& friend_num : indices)
 			{
-				auto& friends = friends::friends[friend_num];
-				const auto response = friends.response;
+				auto& friends{ friends::friends[friend_num] };
+				const auto response{ friends.response };
+				const auto local_lobby{ response.lobby };
 
 				if (filter.PassFilter(friends.name))
 				{
@@ -174,16 +166,16 @@ namespace friends
 					ImGui::PushStyleColor(ImGuiCol_Text, ImColor(200, 200, 200, 250).Value);
 
 					ImGui::AlignTextToFramePadding();
-					const auto selected = ImGui::Selectable(friends.name.data() + "##"s + std::to_string(friend_num));
+					const auto selected{ ImGui::Selectable(friends.name.data() + "##"s + std::to_string(friend_num)) };
 
 					ImGui::PopStyleColor();
 
-					const auto popup = "friend_popup##" + std::to_string(friend_num);
+					const auto popup{ "friend_popup##" + std::to_string(friend_num) };
 					static game::netadr_t netadr{};
 
 					if (selected)
 					{
-						if (!game::oob::register_remote_addr(response.lobby, &netadr))
+						if (!game::oob::register_remote_addr(local_lobby, &netadr))
 						{
 							PRINT_LOG("Failed to retrieve the remote IP address from XNADDR.");
 						}
@@ -191,13 +183,15 @@ namespace friends
 						ImGui::OpenPopup(popup.data());
 					}
 
+					const auto ip_str{ utils::string::adr_to_string(&netadr) }; 
+					
 					if (ImGui::BeginPopup(popup.data(), ImGuiWindowFlags_NoMove))
 					{
 						ImGui::MenuItem(friends.name + "##" + std::to_string(friend_num) + "friend_menu_item", nullptr, false, false);
 
 						if (ImGui::IsItemClicked())
 						{
-							
+							ImGui::LogToClipboardUnformatted(friends.name);
 						}
 
 						if (ImGui::IsItemHovered())
@@ -236,18 +230,22 @@ namespace friends
 							ImGui::LogToClipboardUnformatted(std::to_string(friends.id));
 						}
 
-						const auto ip_data_string = friends.ip_data.empty() ? "Invalid IP Data" : friends.ip_data;
+						const auto is_ready{ response.valid && netadr.inaddr }; 
+						const auto ip_data_string{ !is_ready ? "Invalid IP Data" : ip_str };
 
-						if (ImGui::MenuItem(ip_data_string, nullptr, nullptr, ip_data_string == friends.ip_data))
+						if (ImGui::MenuItem(ip_data_string, nullptr, nullptr, ip_data_string == ip_str))
 						{
 							ImGui::LogToClipboardUnformatted(ip_data_string);
 						}
 
 						ImGui::Separator();
-
-						if (ImGui::MenuItem("Crash game"))
+						
+						if (ImGui::MenuItem("Crash game", nullptr, nullptr, response.valid))
 						{
 							exploit::instant_message::send_info_response_overflow(friends.id);
+
+							if (netadr.inaddr)
+								exploit::send_crash(netadr);
 						}
 						
 						if (ImGui::MenuItem("Open popup", nullptr, nullptr, response.valid))
@@ -255,17 +253,17 @@ namespace friends
 							exploit::instant_message::send_popup(friends.id);
 						}
 
-						if (ImGui::MenuItem("Kick player", nullptr, nullptr, response.valid))
+						if (ImGui::MenuItem("Kick player", nullptr, nullptr, is_ready))
 						{
 							exploit::send_connect_response_migration_packet(netadr);
 						}
 
-						if (ImGui::MenuItem("Show migration screen", nullptr, nullptr, response.valid))
+						if (ImGui::MenuItem("Show migration screen", nullptr, nullptr, is_ready))
 						{
 							exploit::send_mstart_packet(netadr);
 						}
 						
-						if (ImGui::BeginMenu("Send OOB##" + std::to_string(friend_num), response.valid))
+						if (ImGui::BeginMenu("Send OOB##" + std::to_string(friend_num), is_ready))
 						{
 							static auto oob_input = ""s;
 
@@ -286,7 +284,7 @@ namespace friends
 
 					ImGui::AlignTextToFramePadding();
 					
-					const auto online_status = response.valid ? "Online" : "Last seen: " + get_timestamp(friends.last_online);
+					const auto online_status{ response.valid ? "Online" : "Last seen: " + get_timestamp(friends.last_online) };
 					ImGui::TextColored(response.valid ? ImColor(0, 255, 127, 250).Value : ImColor(200, 200, 200, 250).Value, online_status.data());
 
 					ImGui::NextColumn();

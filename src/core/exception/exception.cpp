@@ -17,13 +17,14 @@ namespace exception
 	
 	void reset_state()
 	{
-		auto error = "Termination due to a stack overflow."s;
+		auto error{ "Termination due to a stack overflow."s };
 		if (exception_data.code != EXCEPTION_STACK_OVERFLOW)
 		{
 			error = utils::string::va("Exception: 0x%08X at offset 0x%llX", exception_data.code, DWORD64(exception_data.address) - game::base_address);
 		}
 
 		PRINT_LOG("%s", error.data()); 
+		game::Com_Error(nullptr, 0, game::ERROR_DROP, error.data());
 	}
 	
 	size_t get_reset_state_stub()
@@ -40,8 +41,8 @@ namespace exception
 	
 	LONG __stdcall exception_filter(const LPEXCEPTION_POINTERS ex)
 	{
-		const auto code = ex->ExceptionRecord->ExceptionCode;
-		const auto addr = ex->ExceptionRecord->ExceptionAddress;
+		const auto code{ ex->ExceptionRecord->ExceptionCode };
+		const auto addr{ ex->ExceptionRecord->ExceptionAddress };
 		
 		if (code == STATUS_INTEGER_OVERFLOW || code == STATUS_FLOAT_OVERFLOW)
 		{
@@ -50,9 +51,9 @@ namespace exception
 		
 		if (ex->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
 		{
-			const auto index = static_cast<dvar::exception_index>(ex->ContextRecord->Rcx);
+			const auto index{ static_cast<dvar::exception_index>(ex->ContextRecord->Rcx) };
 
-			if (const auto exception_func = dvar::exceptions.find(index); exception_func != dvar::exceptions.end())
+			if (const auto exception_func{ dvar::exceptions.find(index) }; exception_func != dvar::exceptions.end())
 			{
 				exception_func->second(ex);
 				return EXCEPTION_CONTINUE_EXECUTION;
@@ -60,7 +61,7 @@ namespace exception
 		}
 		else if (ex->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP)
 		{
-			if (const auto exception_func = hbp::exceptions.find(ex->ContextRecord->Rip); exception_func != hbp::exceptions.end())
+			if (const auto exception_func{ hbp::exceptions.find(ex->ContextRecord->Rip) }; exception_func != hbp::exceptions.end())
 			{
 				return exception_func->second(ex);
 			}

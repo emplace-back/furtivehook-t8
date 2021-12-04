@@ -11,7 +11,6 @@ namespace friends
 	{
 		std::uint64_t id;
 		std::string name;
-		std::string ip_data;
 		std::int64_t last_online;
 		events::instant_message::response_t response;
 	}; 

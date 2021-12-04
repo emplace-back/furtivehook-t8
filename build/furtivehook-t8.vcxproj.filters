@@ -16,6 +16,9 @@
     <Filter Include="core\events\instant_message">
       <UniqueIdentifier>{66F0724A-D2FD-A030-5BE4-9C1BC7F06CE7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core\events\lobby_msg">
+      <UniqueIdentifier>{7F359D40-EBA1-583B-B495-F09820C17AA3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="core\exception">
       <UniqueIdentifier>{AC25D4F4-98F3-C7FA-8187-38216DF4A35F}</UniqueIdentifier>
     </Filter>
@@ -104,6 +107,9 @@
     </ClInclude>
     <ClInclude Include="..\src\core\events\instant_message\instant_message.hpp">
       <Filter>core\events\instant_message</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\events\lobby_msg\lobby_msg.hpp">
+      <Filter>core\events\lobby_msg</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\exception\dvar\dvar.hpp">
       <Filter>core\exception\dvar</Filter>
@@ -424,6 +430,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\events\instant_message\instant_message.cpp">
       <Filter>core\events\instant_message</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\events\lobby_msg\lobby_msg.cpp">
+      <Filter>core\events\lobby_msg</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\exception\dvar\dvar.cpp">
       <Filter>core\exception\dvar</Filter>

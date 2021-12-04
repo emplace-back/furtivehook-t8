@@ -3,16 +3,17 @@
 namespace game
 {
 	std::unordered_map<std::string, bool> handlers; 
+	LobbySession* session = nullptr;
 	dvar_t* com_smoothframes_original = nullptr;
 	
 	namespace oob
 	{
-		bool send(const game::netadr_t& target, const std::string& data, const game::netsrc_t& sock)
+		bool send(const netadr_t& target, const std::string& data, const netsrc_t& sock)
 		{
 			return NET_OutOfBandPrint(sock, target, data.data());
 		}
 
-		bool register_remote_addr(const game::XSESSION_INFO* info, netadr_t* addr)
+		bool register_remote_addr(const XSESSION_INFO* info, netadr_t* addr)
 		{
 			dwRegisterSecIDAndKey(&info->sessionID, &info->keyExchangeKey);
 
@@ -45,8 +46,9 @@ namespace game
 		security::initialize();
 		security::iat::initialize();
 		exception::initialize();
-		events::instant_message::initialize();
 		events::connectionless_packet::initialize();
+		events::instant_message::initialize();
+		events::lobby_msg::initialize();
 		misc::initialize();
 
 		PRINT_LOG("Initialized!");
@@ -68,7 +70,7 @@ namespace game
 	
 	XSESSION_INFO get_session_info(const InfoResponseLobby& lobby)
 	{
-		game::XSESSION_INFO sess_info{};
+		XSESSION_INFO sess_info{};
 		sess_info.sessionID = lobby.secId;
 		sess_info.keyExchangeKey = lobby.secKey;
 		sess_info.hostAddress = lobby.serializedAdr.xnaddr;

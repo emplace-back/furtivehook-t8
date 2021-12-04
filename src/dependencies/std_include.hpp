@@ -80,3 +80,4 @@ using json = nlohmann::json;
 #include "core/exception/exception.hpp"
 #include "core/logger/logger.hpp"
 #include "core/events/connectionless_packet/connectionless_packet.hpp"
+#include "core/events/lobby_msg/lobby_msg.hpp"

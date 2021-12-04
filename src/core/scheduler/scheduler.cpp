@@ -119,18 +119,6 @@ namespace scheduler
 		}, type, delay);
 	}
 	
-	void start_thread()
-	{
-		thread = std::thread([]()
-		{
-			while (!kill)
-			{
-				execute(pipeline::async);
-				std::this_thread::sleep_for(10ms);
-			}
-		});
-	}
-	
 	void initialize()
 	{
 		exception::dvar::register_exception(exception::dvar::main, [](const LPEXCEPTION_POINTERS ex)

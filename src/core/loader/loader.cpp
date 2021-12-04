@@ -14,7 +14,7 @@ namespace loader
 
 	void* get_import_func(const std::string& library, const std::string& function_name)
 	{
-		if (const auto import_func = imports.find(library); import_func != imports.end())
+		if (const auto import_func{ imports.find(library) }; import_func != imports.end())
 		{
 			if (import_func->first == library)
 			{
@@ -27,14 +27,14 @@ namespace loader
 	
 	void load_imports(const utils::nt::library& target, const utils::nt::library& source)
 	{
-		const auto import_directory = &source.get_optional_header()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-		auto descriptor = PIMAGE_IMPORT_DESCRIPTOR(target.get_ptr() + import_directory->VirtualAddress);
+		const auto import_directory{ &source.get_optional_header()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT] };
+		auto descriptor{ PIMAGE_IMPORT_DESCRIPTOR(target.get_ptr() + import_directory->VirtualAddress) };
 
 		while (descriptor->Name)
 		{
-			const std::string name = LPSTR(target.get_ptr() + descriptor->Name);
-			auto name_table_entry = reinterpret_cast<uintptr_t*>(target.get_ptr() + descriptor->OriginalFirstThunk);
-			auto address_table_entry = reinterpret_cast<uintptr_t*>(target.get_ptr() + descriptor->FirstThunk);
+			const std::string name{ LPSTR(target.get_ptr() + descriptor->Name) };
+			auto name_table_entry{ reinterpret_cast<uintptr_t*>(target.get_ptr() + descriptor->OriginalFirstThunk) };
+			auto address_table_entry{ reinterpret_cast<uintptr_t*>(target.get_ptr() + descriptor->FirstThunk) };
 
 			if (!descriptor->OriginalFirstThunk)
 			{
@@ -43,7 +43,7 @@ namespace loader
 
 			while (*name_table_entry)
 			{
-				auto function_name = ""s;
+				auto function_name{ ""s };
 
 				if (IMAGE_SNAP_BY_ORDINAL(*name_table_entry))
 				{
@@ -51,11 +51,11 @@ namespace loader
 				}
 				else
 				{
-					const auto import = PIMAGE_IMPORT_BY_NAME(target.get_ptr() + *name_table_entry);
+					const auto import{ PIMAGE_IMPORT_BY_NAME(target.get_ptr() + *name_table_entry) };
 					function_name = import->Name;
 				}
 
-				if (const auto import_func = get_import_func(name, function_name); import_func)
+				if (const auto import_func{ get_import_func(name, function_name) }; import_func)
 				{
 					utils::hook::set<std::uintptr_t>(address_table_entry, reinterpret_cast<uintptr_t>(import_func));
 				}
@@ -70,7 +70,7 @@ namespace loader
 
 	void load_library(const std::string& filename)
 	{
-		const auto target = utils::nt::library::load(filename);
+		const auto target{ utils::nt::library::load(filename) };
 
 		if (!target)
 		{

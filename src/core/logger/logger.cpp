@@ -14,7 +14,7 @@ namespace logger
 
 		va_end(ap);
 
-		const static auto filename = utils::generate_log_filename("furtivehook\\logs\\");
+		const static auto filename{ utils::generate_log_filename("furtivehook\\logs\\") };
 		utils::io::write_file(filename, buffer, true);
 	}
 }

@@ -195,33 +195,8 @@ namespace game
 		MESSAGE_TYPE_NONE = -1,
 		MESSAGE_TYPE_INFO_REQUEST = 0,
 		MESSAGE_TYPE_INFO_RESPONSE = 1,
-		MESSAGE_TYPE_LOBBY_STATE_PRIVATE = 2,
-		MESSAGE_TYPE_LOBBY_STATE_GAME = 3,
-		MESSAGE_TYPE_LOBBY_STATE_TRANSITION = 4,
-		MESSAGE_TYPE_LOBBY_HOST_HEARTBEAT = 7,
-		MESSAGE_TYPE_LOBBY_HOST_DISCONNECT = 8,
-		MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT = 9,
-		MESSAGE_TYPE_LOBBY_HOST_LEAVE_WITH_PARTY = 10,
-		MESSAGE_TYPE_LOBBY_CLIENT_HEARTBEAT = 11,
-		MESSAGE_TYPE_LOBBY_CLIENT_DISCONNECT = 12,
-		MESSAGE_TYPE_LOBBY_CLIENT_RELIABLE_DATA = 13,
-		MESSAGE_TYPE_LOBBY_CLIENT_CONTENT = 14,
-		MESSAGE_TYPE_LOBBY_MODIFIED_STATS = 15,
-		MESSAGE_TYPE_JOIN_LOBBY = 16,
-		MESSAGE_TYPE_JOIN_RESPONSE = 17,
-		MESSAGE_TYPE_JOIN_AGREEMENT_REQUEST = 18,
-		MESSAGE_TYPE_JOIN_AGREEMENT_RESPONSE = 19,
-		MESSAGE_TYPE_JOIN_COMPLETE = 20,
-		MESSAGE_TYPE_JOIN_MEMBER_INFO = 21,
-		MESSAGE_TYPE_PEER_TO_PEER_CONNECTIVITY_TEST = 23,
-		MESSAGE_TYPE_PEER_TO_PEER_INFO = 24,
-		MESSAGE_TYPE_LOBBY_MIGRATE_ANNOUNCE_HOST = 26,
-		MESSAGE_TYPE_LOBBY_MIGRATE_START = 27,
-		MESSAGE_TYPE_INGAME_MIGRATE_TO = 28,
-		MESSAGE_TYPE_INGAME_MIGRATE_NEW_HOST = 29,
-		MESSAGE_TYPE_VOICE_PACKET = 30,
-		MESSAGE_TYPE_COUNT = 32,
-	}; 
+		MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT = 7,
+	};
 
 	enum netadrtype_t
 	{
@@ -283,6 +258,33 @@ namespace game
 		DVAR_TYPE_COLOR_LAB = 0xE,
 		DVAR_TYPE_SESSIONMODE_BASE_DVAR = 0xF,
 		DVAR_TYPE_COUNT = 0x10,
+	};
+
+	enum LobbyModule
+	{
+		LOBBY_MODULE_INVALID = 0xFFFFFFFF,
+		LOBBY_MODULE_HOST = 0x0,
+		LOBBY_MODULE_CLIENT = 0x1,
+		LOBBY_MODULE_PEER_TO_PEER = 0x3,
+		LOBBY_MODULE_COUNT = 0x4,
+	};
+
+	enum LobbyMode
+	{
+		LOBBY_MODE_INVALID = 0xFFFFFFFF,
+		LOBBY_MODE_PUBLIC = 0x0,
+		LOBBY_MODE_CUSTOM = 0x1,
+		LOBBY_MODE_THEATER = 0x2,
+		LOBBY_MODE_ARENA = 0x3,
+		LOBBY_MODE_FREERUN = 0x4,
+		LOBBY_MODE_COUNT = 0x5,
+	};
+
+	enum SessionActive
+	{
+		SESSION_INACTIVE = 0x0,
+		SESSION_KEEP_ALIVE = 0x1,
+		SESSION_ACTIVE = 0x2,
 	};
 	
 	struct msg_t
@@ -506,10 +508,127 @@ namespace game
 		void *errorData;
 	};
 
-	struct dwLobbyEventHandler
+	struct SessionInfo
 	{
-		std::uint8_t baseclass_0[8];
-		ControllerIndex_t m_controllerIndex;
+		bool inSession;
+		netadr_t netAdr;
+		time_t lastMessageSentToPeer;
+	}; 
+	
+	struct ActiveClient
+	{
+		char pad[0x2C0];
+		std::uint64_t xuid;
+		char pad2[0xAC];
+		char gamertag[32];
+		SessionInfo sessionInfo[2];
+	};
+	
+	struct SessionClient
+	{
+		char pad[0x18];
+		ActiveClient* activeClient;
+	}; 
+	
+	struct LobbySession
+	{
+		LobbyModule module;
+		LobbyType type;
+		LobbyMode mode;
+		char pad[0x34];
+		SessionActive active;
+		char pad2[0x121D4];
 	};
 
+
+
+	enum bdNATType
+	{
+		BD_NAT_UNKNOWN = 0x0,
+		BD_NAT_OPEN = 0x1,
+		BD_NAT_MODERATE = 0x2,
+		BD_NAT_STRICT = 0x3,
+		BD_NAT_COUNT = 0x4,
+	};
+
+	struct bdReferencable
+	{
+		int(**_vptr$bdReferencable)(void);
+		volatile long m_refCount;
+	};
+
+	struct $6741FC495A8B2E2BAD20C8172EB1EAD0
+	{
+		unsigned char m_b1;
+		unsigned char m_b2;
+		unsigned char m_b3;
+		unsigned char m_b4;
+	};
+
+	struct $1623BBAA00FD6ABF956B3E4A1698C8C9
+	{
+		unsigned short m_w1;
+		unsigned short m_w2;
+		unsigned short m_w3;
+		unsigned short m_w4;
+		unsigned short m_w5;
+		unsigned short m_w6;
+		unsigned short m_w7;
+		unsigned short m_w8;
+	};
+
+
+	union $7FA1600C02EC957451F4B78DDDD8EBD1
+	{
+		$7FA1600C02EC957451F4B78DDDD8EBD1::$6741FC495A8B2E2BAD20C8172EB1EAD0 m_caddr;
+		unsigned int m_iaddr;
+		$1623BBAA00FD6ABF956B3E4A1698C8C9 m_caddr6;
+		unsigned char m_iaddr6[16];
+		unsigned char m_sockaddr_storage[128];
+	};
+
+
+	struct bdSockAddr
+	{
+		bdSockAddr::$7FA1600C02EC957451F4B78DDDD8EBD1 inUn;
+		unsigned short m_family;
+	};
+
+	struct bdInetAddr
+	{
+		bdSockAddr m_addr;
+	};
+
+	struct bdAddr
+	{
+		bdInetAddr m_address;
+		unsigned short m_port;
+	};
+
+	struct bdLocalAddr
+	{
+		bdAddr *m_data;
+		unsigned int m_capacity;
+		unsigned int m_size;
+	};
+
+	struct bdCommonAddr : bdReferencable
+	{
+		bdLocalAddr m_localAddrs;
+		bdAddr m_publicAddr;
+		bdNATType m_natType;
+		unsigned int m_hash;
+		bool m_isLoopback;
+	};
+
+	struct bdCommonAddrRef
+	{
+		bdCommonAddr *m_ptr;
+	};
+
+	struct Msg_ConnectionTest
+	{
+		int lobbyType;
+		int clientIndex;
+	};
 }

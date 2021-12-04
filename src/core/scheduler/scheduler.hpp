@@ -13,7 +13,6 @@ namespace scheduler
 	enum pipeline
 	{
 		main,
-		async,
 		count,
 	};
 
@@ -25,6 +24,5 @@ namespace scheduler
 	void loop(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
 	void once(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
 	void on_dw_initialized(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
-	void start_thread();
 	void initialize();
 }

@@ -5,7 +5,7 @@ namespace utils::io
 {
 	bool write_file(const std::string& file, const std::string& data, const bool append)
 	{
-		if (const auto pos = file.find_last_of("/\\"); pos != std::string::npos)
+		if (const auto pos{ file.find_last_of("/\\") }; pos != std::string::npos)
 		{
 			create_directory(file.substr(0, pos));
 		}
@@ -14,7 +14,7 @@ namespace utils::io
 
 		if (stream.is_open())
 		{
-			auto line = ""s;
+			auto line{ ""s };
 			line.append(data);
 
 			if (append)
@@ -51,13 +51,13 @@ namespace utils::io
 
 	std::string get_json_file(const std::string& name)
 	{
-		const utils::nt::library self;
+		const utils::nt::library self{};
 		return self.get_folder() + "\\furtivehook\\json\\" + name;
 	}
 
 	std::ifstream read_json_file(const std::string& name)
 	{
-		if (const auto file = get_json_file(name); file_exists(file))
+		if (const auto file{ get_json_file(name) }; file_exists(file))
 		{
 			return std::ifstream(file);
 		}
@@ -67,7 +67,7 @@ namespace utils::io
 
 	json parse_json_file(const std::string& name)
 	{
-		auto json_file = read_json_file(name);
+		auto json_file{ read_json_file(name) };
 		return json::parse(json_file);
 	}
 }

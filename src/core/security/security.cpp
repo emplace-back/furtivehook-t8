@@ -13,6 +13,17 @@ namespace security
 				return true;
 			});
 		}
+
+		events::lobby_msg::on_message(game::LOBBY_MODULE_CLIENT, [=](const auto& target, auto& msg, const auto& sender_id)
+		{
+			if (msg.type == game::MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT)
+			{
+				PRINT_MESSAGE("Disconnect prevented from (%llu) %s", sender_id, utils::string::adr_to_string(&target).data());
+				return true;
+			}
+
+			return false;
+		});
 		
 		events::instant_message::dispatch::on_message('f', [=](const auto& sender_id, auto& msg)
 		{

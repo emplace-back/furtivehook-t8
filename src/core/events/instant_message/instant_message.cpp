@@ -33,7 +33,6 @@ namespace events::instant_message
 	
 	void add_friend_response(const std::uint64_t sender_id, game::Msg_InfoResponse& response)
 	{
-		const auto valid{ response.nonce == nonce };
 		const auto lobby{ response.lobby[0] };
 		const auto last_online{ std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() };
 
@@ -41,7 +40,7 @@ namespace events::instant_message
 		{
 			if (sender_id == friends.id)
 			{
-				add_friend_response(friends, { valid, lobby, last_online });
+				add_friend_response(friends, { true, lobby, last_online });
 			}
 		}
 	}
@@ -83,20 +82,25 @@ namespace events::instant_message
 			game::MSG_InitReadOnly(&msg, message, message_size);
 			game::MSG_BeginReading(&msg);
 
-			auto type = 0ui8;
+			auto type{ 0ui8 };
 
 			if (game::MSG_ReadByte(&msg) == '2')
 			{
 				type = game::MSG_ReadByte(&msg);
 			}
-
-			instant_message::dispatch::log_instant_messages(sender_id, message_size, type);
 			
 			if (const auto message_func{ messages.find(type) }; message_func != messages.end())
 			{
-				return message_func->second(sender_id, msg);
+				const auto msg_backup{ msg }; 
+				const auto cb{ message_func->second(sender_id, msg) };
+
+				if (msg.readcount != msg_backup.readcount)
+					msg = msg_backup;
+
+				return cb;
 			}
 
+			instant_message::dispatch::log_instant_messages(sender_id, message_size, type); 
 			return false;
 		}
 		
@@ -141,14 +145,27 @@ namespace events::instant_message
 						return true;
 					}
 
-					if (lobby_msg.type == game::MESSAGE_TYPE_INFO_RESPONSE)
+					if (lobby_msg.type == game::MESSAGE_TYPE_INFO_REQUEST)
+					{
+						PRINT_LOG("Received a join request from (%llu)", sender_id);
+					}
+					else if (lobby_msg.type == game::MESSAGE_TYPE_INFO_RESPONSE)
 					{
 						game::Msg_InfoResponse response{};
 
 						if (!game::MSG_InfoResponse(&response, &lobby_msg))
 							return false;
 
-						add_friend_response(sender_id, response);
+						if (response.nonce == nonce)
+						{
+							add_friend_response(sender_id, response);
+						}
+						else
+						{
+							PRINT_LOG("Received join response from (%llu) %s",
+								sender_id,
+								utils::string::adr_to_string(&response.lobby[0].serializedAdr.xnaddr).data());
+						}
 					}
 				}
 
@@ -168,12 +185,12 @@ namespace events::instant_message
 				std::vector<std::uint64_t> recipients;
 				recipients.emplace_back(friends.id);
 
-				if (recipients.size() > 18)
+				if (game::LiveUser_IsXUIDLocalPlayer(friends.id) || recipients.size() > 18)
 					continue;
 				
 				send_info_request(recipients);
 			}
 
-		}, scheduler::pipeline::async, 10s);
+		}, scheduler::pipeline::main, 10s);
 	}
 }
