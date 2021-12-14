@@ -3,58 +3,58 @@
 
 namespace security
 {
-	void initialize()
+	bool handle_connection_response_migration(const command::args_&, const game::netadr_t& from, game::msg_t&)
 	{
-		for (const auto& handler : game::handlers)
-		{
-			events::connectionless_packet::on_command(handler.first, [=](const auto& args, const auto& target, const auto&)
-			{
-				PRINT_LOG("Ignoring OOB '%s' from %s", args.join().data(), utils::string::adr_to_string(&target).data());
-				return true;
-			});
-		}
+		PRINT_MESSAGE("Kick attempt caught from %s", utils::string::adr_to_string(&from).data());
+		return true;
+	}
+	
+	bool handle_mstart(const command::args_&, const game::netadr_t& from, game::msg_t&)
+	{
+		PRINT_MESSAGE("Migration screen attempt caught from %s", utils::string::adr_to_string(&from).data());
+		return true;
+	}
+	
+	bool handle_friend_message(game::msg_t& msg, const std::uint64_t sender_id)
+	{
+		game::JoinSessionMessage message{};
 
-		events::lobby_msg::on_message(game::LOBBY_MODULE_CLIENT, [=](const auto& target, auto& msg, const auto& sender_id)
+		if (msg.cursize - msg.readcount == sizeof message)
 		{
-			if (msg.type == game::MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT)
+			game::MSG_ReadData(&msg, &message, sizeof message, sizeof message);
+
+			if (message.mType == game::JOIN_REQUEST)
 			{
-				PRINT_MESSAGE("Disconnect prevented from (%llu) %s", sender_id, utils::string::adr_to_string(&target).data());
+				PRINT_MESSAGE("Join request attempt prevented from (%llu)", sender_id);
+				return true;
+			}
+			else if (message.mType == game::JOIN_REPLY)
+			{
+				PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
 				return true;
 			}
 
 			return false;
-		});
-		
-		events::instant_message::dispatch::on_message('f', [=](const auto& sender_id, auto& msg)
-		{
-			game::JoinSessionMessage message{}; 
-				
-			if (msg.cursize - msg.readcount == sizeof message)
-			{
-				game::MSG_ReadData(&msg, &message, sizeof message, sizeof message); 
+		}
 
-				if (message.mType == game::JOIN_REQUEST)
-				{
-					PRINT_MESSAGE("Join request attempt prevented from (%llu)", sender_id);
-					return true;
-				}
-				else if (message.mType == game::JOIN_REPLY)
-				{
-					PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
-					return true;
-				}
-				
-				return false;
-			}
+		PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
+		return true;
+	}
 
-			PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
-			return true;
-		});
-		
-		events::instant_message::dispatch::on_message('e', [=](const auto& sender_id, const auto&)
-		{
-			PRINT_LOG("Ignoring remote command instant message from (%llu)", sender_id);
-			return true;
-		});
+	bool handle_remote_command_message(game::msg_t&, const std::uint64_t sender_id)
+	{
+		PRINT_MESSAGE("Remote command attempt caught from (%llu)", sender_id);
+		return true;
+	}
+	
+	void initialize()
+	{
+		security::iat::initialize(); 
+
+		events::instant_message::on_message('f', &handle_friend_message);
+		events::instant_message::on_message('e', &handle_remote_command_message);
+
+		events::connectionless_packet::on_command("mstart", &handle_mstart);
+		events::connectionless_packet::on_command("connectResponseMigration", &handle_connection_response_migration);
 	}
 }

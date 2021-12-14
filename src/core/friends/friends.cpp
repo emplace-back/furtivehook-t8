@@ -54,6 +54,35 @@ namespace friends
 			}
 		}
 	}
+
+	void add_friend_response(const game::Msg_InfoResponse& info_response, friends::friends_t& friends)
+	{
+		response_t response{};
+		response.valid = true;
+		response.info_response = info_response;
+		response.last_online = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+		
+		if (!friends.response.valid)
+		{
+			friends.last_online = response.last_online;
+			friends::write_to_friends();
+
+			PRINT_MESSAGE("%s is online.", friends.name.data()); 
+		}
+
+		friends.response = response;
+	}
+
+	void add_friend_response(const game::Msg_InfoResponse& info_response, const std::uint64_t sender_id)
+	{
+		for (auto& friends : friends::friends)
+		{
+			if (friends.id == sender_id)
+			{
+				add_friend_response(info_response, friends);
+			}
+		}
+	}
 	
 	void remove_friend(const std::uint64_t id)
 	{
@@ -126,7 +155,7 @@ namespace friends
 			
 			ImGui::BeginColumns("Friends", 3, ImGuiColumnsFlags_NoResize);
 
-			ImGui::SetColumnWidth(-1, 28.0f);
+			ImGui::SetColumnWidth(-1, 38.0f);
 			ImGui::TextUnformatted("#");
 			ImGui::NextColumn();
 			ImGui::TextUnformatted("Friend");
@@ -137,9 +166,9 @@ namespace friends
 
 			ImGui::Separator();
 
-			std::vector<std::uint32_t> indices{};
+			std::vector<size_t> indices{};
 
-			for (auto i = 0u; i != friends.size(); ++i)
+			for (size_t i = 0; i < friends.size(); ++i)
 			{
 				indices.emplace_back(i);
 			}
@@ -151,12 +180,11 @@ namespace friends
 
 			for (const auto& friend_num : indices)
 			{
-				auto& friends{ friends::friends[friend_num] };
-				const auto response{ friends.response };
-				const auto local_lobby{ response.lobby };
-
-				if (filter.PassFilter(friends.name))
+				if (auto& friends{ friends::friends[friend_num] }; filter.PassFilter(friends.name))
 				{
+					const auto response{ friends.response };
+					const auto lobby{ response.info_response.lobby[0] };
+					
 					ImGui::AlignTextToFramePadding();
 
 					ImGui::TextUnformatted(std::to_string(friend_num));
@@ -170,20 +198,26 @@ namespace friends
 
 					ImGui::PopStyleColor();
 
+					const auto is_local{ lobby.hostXuid == friends.id && lobby.isValid };
+
+					if (is_local && lobby.hostName != friends.name)
+					{
+						ImGui::SameLine(0, spacing);
+						ImGui::TextColored(ImColor(200, 200, 200, 250).Value, "(%s)", lobby.hostName);
+					}
+
 					const auto popup{ "friend_popup##" + std::to_string(friend_num) };
 					static game::netadr_t netadr{};
-
+					
 					if (selected)
 					{
-						if (!game::oob::register_remote_addr(local_lobby, &netadr))
+						if (!game::oob::register_remote_addr(lobby, &netadr))
 						{
 							PRINT_LOG("Failed to retrieve the remote IP address from XNADDR.");
 						}
 						
 						ImGui::OpenPopup(popup.data());
 					}
-
-					const auto ip_str{ utils::string::adr_to_string(&netadr) }; 
 					
 					if (ImGui::BeginPopup(popup.data(), ImGuiWindowFlags_NoMove))
 					{
@@ -230,12 +264,18 @@ namespace friends
 							ImGui::LogToClipboardUnformatted(std::to_string(friends.id));
 						}
 
-						const auto is_ready{ response.valid && netadr.inaddr }; 
-						const auto ip_data_string{ !is_ready ? "Invalid IP Data" : ip_str };
+						const auto is_ready{ response.valid && netadr.inaddr && netadr.type != game::NA_BAD };
+						const auto ip_data_string{ is_ready ? utils::string::adr_to_string(&netadr) : "Invalid IP Data" };
 
-						if (ImGui::MenuItem(ip_data_string, nullptr, nullptr, ip_data_string == ip_str))
+						if (ImGui::MenuItem(ip_data_string, nullptr, nullptr, is_ready))
 						{
 							ImGui::LogToClipboardUnformatted(ip_data_string);
+						}
+
+						if (is_ready)
+						{
+							ImGui::SameLine();
+							ImGui::TextColored(ImColor(200, 200, 200, 250).Value, is_local ? "(Local)" : "(Session)");
 						}
 
 						ImGui::Separator();
@@ -256,6 +296,11 @@ namespace friends
 						if (ImGui::MenuItem("Kick player", nullptr, nullptr, is_ready))
 						{
 							exploit::send_connect_response_migration_packet(netadr);
+						}
+
+						if (ImGui::MenuItem("Remove from party", nullptr, nullptr, is_ready))
+						{
+							exploit::lobby_msg::send_disconnect_client(netadr, friends.id);
 						}
 
 						if (ImGui::MenuItem("Show migration screen", nullptr, nullptr, is_ready))
@@ -299,5 +344,24 @@ namespace friends
 			ImGui::EndColumns();
 			ImGui::EndTabItem();
 		}
+	}
+
+	void initialize()
+	{
+		scheduler::on_dw_initialized([]()
+		{
+			std::vector<std::uint64_t> recipients{};
+
+			for (const auto& friends : friends::friends)
+			{
+				recipients.emplace_back(friends.id);
+			}
+
+			utils::for_each_batch<std::uint64_t>(recipients, 18, [](const auto& ids)
+			{
+				events::instant_message::send_info_request(ids);
+			});
+
+		}, scheduler::pipeline::backend, 60s);
 	}
 }

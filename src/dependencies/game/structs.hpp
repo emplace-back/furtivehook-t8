@@ -147,6 +147,17 @@ using ClientNum_t = std::uint32_t;
 
 namespace game
 {
+	enum JoinType
+	{
+		JOIN_TYPE_NORMAL = 0x0,
+		JOIN_TYPE_PLAYLIST = 0x1,
+		JOIN_TYPE_FRIEND = 0x2,
+		JOIN_TYPE_INVITE = 0x3,
+		JOIN_TYPE_PARTY = 0x4,
+		JOIN_TYPE_GROUPS = 0x5,
+		JOIN_TYPE_COUNT = 0x6,
+	};
+	
 	enum LobbyType
 	{
 		LOBBY_TYPE_INVALID = 0xFFFFFFFF,
@@ -189,13 +200,38 @@ namespace game
 		PACKAGE_TYPE_WRITE = 0x1,
 		PACKAGE_TYPE_READ = 0x2,
 	}; 
-	
+
 	enum MsgType
 	{
 		MESSAGE_TYPE_NONE = -1,
 		MESSAGE_TYPE_INFO_REQUEST = 0,
 		MESSAGE_TYPE_INFO_RESPONSE = 1,
+		MESSAGE_TYPE_LOBBY_STATE_PRIVATE = 2,
+		MESSAGE_TYPE_LOBBY_STATE_GAME = 3,
+		MESSAGE_TYPE_LOBBY_STATE_TRANSITION = 4,
+		MESSAGE_TYPE_LOBBY_HOST_HEARTBEAT = 5,
+		MESSAGE_TYPE_LOBBY_HOST_DISCONNECT = 6,
 		MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT = 7,
+		MESSAGE_TYPE_LOBBY_HOST_LEAVE_WITH_PARTY = 8,
+		MESSAGE_TYPE_LOBBY_CLIENT_HEARTBEAT = 10,
+		MESSAGE_TYPE_LOBBY_CLIENT_DISCONNECT = 11,
+		MESSAGE_TYPE_LOBBY_CLIENT_RELIABLE_DATA = 12,
+		MESSAGE_TYPE_LOBBY_CLIENT_CONTENT = 13,
+		MESSAGE_TYPE_LOBBY_MODIFIED_STATS = 14,
+		MESSAGE_TYPE_JOIN_LOBBY = 15,
+		MESSAGE_TYPE_JOIN_RESPONSE = 16,
+		MESSAGE_TYPE_JOIN_AGREEMENT_REQUEST = 17,
+		MESSAGE_TYPE_JOIN_AGREEMENT_RESPONSE = 18,
+		MESSAGE_TYPE_JOIN_COMPLETE = 19,
+		MESSAGE_TYPE_JOIN_MEMBER_INFO = 20,
+		MESSAGE_TYPE_PEER_TO_PEER_CONNECTIVITY_TEST = 22,
+		MESSAGE_TYPE_PEER_TO_PEER_INFO = 23,
+		MESSAGE_TYPE_LOBBY_MIGRATE_ANNOUNCE_HOST = 25,
+		MESSAGE_TYPE_LOBBY_MIGRATE_START = 26,
+		MESSAGE_TYPE_INGAME_MIGRATE_TO = 27,
+		MESSAGE_TYPE_INGAME_MIGRATE_NEW_HOST = 28,
+		MESSAGE_TYPE_VOICE_PACKET = 29,
+		MESSAGE_TYPE_COUNT = 33,
 	};
 
 	enum netadrtype_t
@@ -238,6 +274,15 @@ namespace game
 		LOBBY_MAINMODE_COUNT = 0x3,
 	};
 
+	enum eModes
+	{
+		MODE_ZOMBIES = 0x0,
+		MODE_MULTIPLAYER = 0x1,
+		MODE_CAMPAIGN = 0x2,
+		MODE_COUNT = 0x3,
+		MODE_INVALID = 0x3,
+		MODE_FIRST = 0x0,
+	};
 
 	enum dvarType_t
 	{
@@ -286,6 +331,17 @@ namespace game
 		SESSION_KEEP_ALIVE = 0x1,
 		SESSION_ACTIVE = 0x2,
 	};
+
+	enum LobbyDisconnectClient
+	{
+		LOBBY_DISCONNECT_CLIENT_INVALID = 0xFFFFFFFF,
+		LOBBY_DISCONNECT_CLIENT_DROP = 0x0,
+		LOBBY_DISCONNECT_CLIENT_KICK = 0x1,
+		LOBBY_DISCONNECT_CLIENT_BADDLC = 0x2,
+		LOBBY_DISCONNECT_CLIENT_KICK_PARTY = 0x3,
+		LOBBY_DISCONNECT_CLIENT_HOSTRELOAD = 0x4,
+		LOBBY_DISCONNECT_CLIENT_NOPARTYCHAT = 0x5,
+	};
 	
 	struct msg_t
 	{
@@ -296,12 +352,7 @@ namespace game
 		char pad[0x21];
 		bool overflowed;
 		bool readOnly;
-		char pad2[0x2];
-	};
-	
-	struct LobbyMsg
-	{
-		msg_t msg;
+		char pad2[0x8];
 		MsgType type;
 		PackageType packageType;
 		char encodeFlags;
@@ -515,12 +566,17 @@ namespace game
 		time_t lastMessageSentToPeer;
 	}; 
 	
-	struct ActiveClient
+	struct FixedClientInfo
 	{
-		char pad[0x2C0];
 		std::uint64_t xuid;
 		char pad2[0xAC];
 		char gamertag[32];
+	};
+
+	struct ActiveClient
+	{
+		char pad[0x2C0];
+		FixedClientInfo fixedClientInfo;
 		SessionInfo sessionInfo[2];
 	};
 	
@@ -539,8 +595,6 @@ namespace game
 		SessionActive active;
 		char pad2[0x121D4];
 	};
-
-
 
 	enum bdNATType
 	{
@@ -630,5 +684,73 @@ namespace game
 	{
 		int lobbyType;
 		int clientIndex;
+	};
+
+	struct userData_t
+	{
+		char pad[0x4];
+		char gamertag[32];
+		char pad2[0x14];
+		int signInState;
+		int connectionState;
+	};
+
+	struct MsgHostMigrateInfo
+	{
+		uint8_t indexBits;
+		int32_t lasthostTimeMS;
+		uint64_t migrateNominees[18];
+	}; 
+	
+	struct Msg_LobbyHostHeartbeat
+	{
+		int heartbeatNum;
+		int lobbyType;
+		MsgHostMigrateInfo migrateInfo;
+	};
+
+	struct Msg_LobbyMigrateStart
+	{
+		int lobbyType;
+		uint64_t migrateTo;
+	};
+
+	struct Msg_PeerToPeerInfo
+	{
+		int lobbyType;
+		int connectivityBits;
+		uint64_t clientXuid;
+	};
+
+	struct Msg_ClientReliableData
+	{
+		uint32_t dataMask;
+		LobbyType lobbyType;
+		uint64_t xuidNewLeader;
+		uint64_t disconnectClientXuid;
+		int disconnectClient;
+		int leaderActivity;
+		uint64_t platformSessionID;
+		int lobbyTypeMoveFrom;
+		int moveCount;
+		uint64_t moveXuids[18];
+		int team;
+		int mapVote;
+		bool readyUp;
+		int itemVote;
+		int characterSelection;
+		bool editComplete;
+	};
+
+	struct InfoProbe
+	{
+		bool active;
+		unsigned int nonce;
+	};
+
+	struct dwLobbyEventHandler
+	{
+		std::uint8_t baseclass_0[8];
+		ControllerIndex_t m_controllerIndex;
 	};
 }

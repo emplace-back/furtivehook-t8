@@ -3,14 +3,32 @@
 
 namespace exception::dvar
 {
-	std::unordered_map<exception_index, callback> exceptions;
-
-	void register_exception(const exception_index& index, const callback& callback)
+	namespace
 	{
-		if (exceptions.find(index) == exceptions.end())
+		std::unordered_map<int, callback>& get_callbacks()
 		{
-			exceptions[index] = callback;
+			static std::unordered_map<int, callback> callbacks{};
+			return callbacks;
 		}
+	}
+
+	void register_exception(const int index, const callback& callback)
+	{
+		get_callbacks()[index] = callback;
+	}
+
+	bool handle_exception(const LPEXCEPTION_POINTERS ex)
+	{
+		const auto& callbacks = get_callbacks();
+		const auto handler = callbacks.find(ex->ContextRecord->Rcx);
+
+		if (handler == callbacks.end())
+		{
+			return false;
+		}
+
+		handler->second(ex);
+		return true;
 	}
 
 	void initialize()

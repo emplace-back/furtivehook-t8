@@ -15,11 +15,11 @@ BOOL __stdcall DllMain(const HMODULE module, const DWORD reason, const LPVOID /*
 			}
 			catch (const std::exception& ex) 
 			{
-				MessageBoxA(nullptr, ex.what(), "Exception Caught", 0);
+				MessageBoxA(nullptr, ex.what(), "Exception Caught", MB_OK);
 			}
 			catch (...) 
 			{
-				MessageBoxA(nullptr, "Something unexpected happened", "Exception Caught", 0);
+				MessageBoxA(nullptr, "Something unexpected happened", "Exception Caught", MB_OK);
 			}
 
 			break;

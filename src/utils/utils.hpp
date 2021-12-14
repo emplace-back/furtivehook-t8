@@ -44,4 +44,30 @@ namespace utils
 	{
 		return static_cast<std::uint64_t>(std::atoll(str.data()));
 	}
+
+	template <typename T>
+	std::vector<std::vector<T>> get_batch(const std::vector<T>& v, const size_t num)
+	{
+		std::vector<std::vector<T>> batches{};
+		batches.reserve(v.size() / num);
+
+		for (size_t i = 0; i < v.size(); i += num)
+		{
+			const auto last{ std::min(v.size(), i + num) };
+			batches.emplace_back(v.begin() + i, v.begin() + last);
+		}
+
+		return batches;
+	}
+
+	template <typename T>
+	void for_each_batch(const std::vector<T>& v, const size_t num, const std::function<void(std::vector<T>)>& callback)
+	{
+		const auto batches{ get_batch(v, num) };
+
+		for (const auto& batch : batches)
+		{
+			callback(batch);
+		}
+	}
 }

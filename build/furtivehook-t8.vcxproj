@@ -109,11 +109,12 @@
   <ItemGroup>
     <ClInclude Include="..\src\core\command\command.hpp" />
     <ClInclude Include="..\src\core\events\connectionless_packet\connectionless_packet.hpp" />
+    <ClInclude Include="..\src\core\events\events.hpp" />
     <ClInclude Include="..\src\core\events\instant_message\instant_message.hpp" />
     <ClInclude Include="..\src\core\events\lobby_msg\lobby_msg.hpp" />
     <ClInclude Include="..\src\core\exception\dvar\dvar.hpp" />
     <ClInclude Include="..\src\core\exception\exception.hpp" />
-    <ClInclude Include="..\src\core\exception\hbp\hbp.hpp" />
+    <ClInclude Include="..\src\core\exception\hwbp\hwbp.hpp" />
     <ClInclude Include="..\src\core\exploit\exploit.hpp" />
     <ClInclude Include="..\src\core\friends\friends.hpp" />
     <ClInclude Include="..\src\core\input\input.hpp" />
@@ -218,11 +219,12 @@
   <ItemGroup>
     <ClCompile Include="..\src\core\command\command.cpp" />
     <ClCompile Include="..\src\core\events\connectionless_packet\connectionless_packet.cpp" />
+    <ClCompile Include="..\src\core\events\events.cpp" />
     <ClCompile Include="..\src\core\events\instant_message\instant_message.cpp" />
     <ClCompile Include="..\src\core\events\lobby_msg\lobby_msg.cpp" />
     <ClCompile Include="..\src\core\exception\dvar\dvar.cpp" />
     <ClCompile Include="..\src\core\exception\exception.cpp" />
-    <ClCompile Include="..\src\core\exception\hbp\hbp.cpp" />
+    <ClCompile Include="..\src\core\exception\hwbp\hwbp.cpp" />
     <ClCompile Include="..\src\core\exploit\exploit.cpp" />
     <ClCompile Include="..\src\core\friends\friends.cpp" />
     <ClCompile Include="..\src\core\input\input.cpp" />

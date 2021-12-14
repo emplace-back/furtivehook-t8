@@ -3,99 +3,109 @@
 
 namespace events::lobby_msg
 {
-	std::unordered_map<game::LobbyModule, callback> messages;
 	bool log_messages = false;
-
-	void on_message(const game::LobbyModule& lobby_module, const callback& callback)
-	{
-		if (messages.find(lobby_module) == messages.end())
-		{
-			messages[lobby_module] = callback;
-		}
-	}
 	
-	void log_lobby_messages(const game::netadr_t* from, const game::LobbyMsg* lobby_msg, const std::uint64_t sender_id, const game::LobbyModule module)
+	namespace
 	{
-		const auto ip_str{ utils::string::adr_to_string(from) };
-		const auto type_name{ game::LobbyTypes_GetMsgTypeName(lobby_msg->type) };
-		const auto lobby_message{ "Received lobby message [%i] <%s> from (%llu) %s" };
-
-		if (!log_messages)
+		bool handle_host_disconnect_client(const game::netadr_t& from, game::msg_t& msg)
 		{
-			return logger::print_log(lobby_message, module, type_name, sender_id, ip_str.data());
-		}
-
-		PRINT_LOG(lobby_message, module, type_name, sender_id, ip_str.data());
-	}
-
-	bool handle_message(const game::netadr_t* from, game::LobbyMsg* lobby_msg, const std::uint64_t sender_id, const game::LobbyModule module)
-	{
-		log_lobby_messages(from, lobby_msg, sender_id, module);
-
-		if (lobby_msg->msg.cursize == lobby_msg->msg.readcount)
-		{
-			PRINT_MESSAGE("Received invalid message from (%llu) %s", sender_id, utils::string::adr_to_string(from).data());
+			PRINT_MESSAGE("Disconnect prevented from %s", utils::string::adr_to_string(&from).data());
 			return true;
 		}
 
-		if (const auto message_func{ messages.find(module) }; message_func != messages.end())
+		bool handle_host_msg(const game::netadr_t& from, game::msg_t& msg)
 		{
-			return message_func->second(*from, *lobby_msg, sender_id);
-		}
-
-		return false;
-	}
-	
-	bool __fastcall callback_handle_packet_internal(game::netadr_t* from, game::msg_t* msg, std::uint64_t sender_id, game::LobbyModule module)
-	{
-		if (game::LobbyMsg lobby_msg{}; game::LobbyMsgRW_PrepReadMsg(&lobby_msg, msg))
-		{
-			if (handle_message(from, &lobby_msg, sender_id, module))
+			if (msg.type == game::MESSAGE_TYPE_LOBBY_HOST_DISCONNECT_CLIENT)
 			{
-				return true;
+				return handle_host_disconnect_client(from, msg);
 			}
+
+			return false;
+		}
+		
+		void log_lobby_messages(const game::netadr_t* from, const game::msg_t* msg, const game::LobbyModule module)
+		{
+			const auto ip_str{ utils::string::adr_to_string(from) };
+			const auto type_name{ game::LobbyTypes_GetMsgTypeName(msg->type) };
+			const auto lobby_message{ "Received lobby message [%i] <%s> from %s" };
+
+			if (!log_messages)
+			{
+				return logger::print_log(lobby_message, module, type_name, ip_str.data());
+			}
+
+			PRINT_LOG(lobby_message, module, type_name, ip_str.data());
+		}
+		
+		std::unordered_map<game::LobbyModule, callback>& get_callbacks()
+		{
+			static std::unordered_map<game::LobbyModule, callback> callbacks{};
+			return callbacks;
 		}
 
-		return false;
+		bool __fastcall handle_packet(game::netadr_t* from, game::msg_t* msg, game::LobbyModule module)
+		{
+			const auto& callbacks = get_callbacks();
+			const auto handler = callbacks.find(module);
+
+			if (handler == callbacks.end())
+			{
+				log_lobby_messages(from, msg,  module);
+				return false;
+			}
+
+			return handler->second(*from, *msg);
+		}
+
+		size_t handle_packet_stub()
+		{
+			const static auto stub = utils::hook::assemble([](auto& a)
+			{
+				const auto return_original = a.newLabel();
+
+				a.mov(ecx, ptr(rbp, 0x77));
+
+				a.pushad64();
+				a.mov(r8, ecx); // lobby_module
+				a.lea(rdx, ptr(rbp, -0x39)); // msg
+				a.mov(rcx, r14); // netadr
+				a.call_aligned(lobby_msg::handle_packet);
+				a.test(al, al);
+				a.jz(return_original);
+				a.popad64();
+				
+				a.jmp(game::base_address + 0x38F7CAD);
+
+				a.bind(return_original);
+				a.popad64();
+				a.jmp(game::base_address + 0x38F7B4B);
+			});
+
+			return reinterpret_cast<size_t>(stub);
+		}
 	}
 
-	size_t handle_packet_internal()
+	std::string build_lobby_msg(const game::LobbyModule module)
 	{
-		static auto stub = utils::hook::assemble([](auto& a)
-		{
-			const auto return_original = a.newLabel();
+		auto data{ "LM"s };
+		data.push_back(0);
+		constexpr auto header{ 0x928ui16 };
+		data.append(reinterpret_cast<const char*>(&header), sizeof header);
+		data.push_back(static_cast<std::uint8_t>(module));
+		data.push_back(-1);
 
-			a.mov(ecx, ptr(rbp, 0x77));
+		return data;
+	}
 
-			a.pushad64();
-
-			a.mov(r9, ecx); // lobby_module
-			a.mov(r8, rsi); // sender_id
-			a.mov(rdx, rdi); // msg
-			a.mov(rcx, r14); // netadr
-
-			a.call_aligned(lobby_msg::callback_handle_packet_internal);
-
-			a.test(al, al);
-			a.jz(return_original);
-
-			a.popad64();
-			a.jmp(game::base_address + 0x38F7CE1);
-
-			a.bind(return_original);
-			a.popad64();
-			a.jmp(game::base_address + 0x38F7B4B);
-		});
-
-		return reinterpret_cast<size_t>(stub);
+	void on_message(const game::LobbyModule& module, const callback& callback)
+	{
+		get_callbacks()[module] = callback;
 	}
 
 	void initialize()
 	{
-		exception::hbp::register_exception(game::base_address + 0x38F7B48, [](const LPEXCEPTION_POINTERS ex)
-		{
-			ex->ContextRecord->Rip = lobby_msg::handle_packet_internal();
-			return EXCEPTION_CONTINUE_EXECUTION;
-		});
+		exception::hwbp::register_exception(game::base_address + 0x38F7B48, lobby_msg::handle_packet_stub);
+
+		events::lobby_msg::on_message(game::LOBBY_MODULE_CLIENT, &handle_host_msg);
 	}
 }

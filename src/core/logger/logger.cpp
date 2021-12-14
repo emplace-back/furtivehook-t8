@@ -5,7 +5,7 @@ namespace logger
 {
 	void print_log(const char* msg, ...)
 	{
-		char buffer[2048];
+		char buffer[2048] = { 0 };
 
 		va_list ap;
 		va_start(ap, msg);

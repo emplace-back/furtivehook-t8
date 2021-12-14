@@ -34,6 +34,7 @@ namespace scheduler
 					i->last_call = now;
 
 					const auto res = i->handler();
+
 					if (res == cond_end)
 					{
 						i = tasks.erase(i);
@@ -63,8 +64,6 @@ namespace scheduler
 		}
 	};
 
-	volatile bool kill = false;
-	std::thread thread;
 	task_pipeline pipelines[pipeline::count];
 
 	void execute(const pipeline type)
@@ -107,16 +106,18 @@ namespace scheduler
 	{
 		schedule([=]()
 		{
-			const auto dw_init{ game::Live_IsUserSignedInToDemonware(0) };
-
+			const auto dw_init{ game::Live_IsDemonwareFetchingDone(0) };
+			
 			if (dw_init)
 			{
 				callback();
-				return cond_continue;
+				
+				loop(callback, type, delay);
+				return cond_end;
 			}
 
 			return cond_continue;
-		}, type, delay);
+		}, type);
 	}
 	
 	void initialize()

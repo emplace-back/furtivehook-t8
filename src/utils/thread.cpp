@@ -25,7 +25,8 @@ namespace utils::thread
 				{
 					ids.emplace_back(entry.th32ThreadID);
 				}
-			} while (Thread32Next(handle, &entry));
+			} 
+			while (Thread32Next(handle, &entry));
 		}
 
 		CloseHandle(handle);

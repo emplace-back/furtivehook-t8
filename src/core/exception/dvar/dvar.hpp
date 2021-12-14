@@ -11,7 +11,8 @@ namespace exception::dvar
 	
 	using callback = std::function<void(const LPEXCEPTION_POINTERS)>;
 	
-	void register_exception(const exception_index& address, const callback & callback);
+	void register_exception(const int index, const callback & callback);
+	bool handle_exception(const LPEXCEPTION_POINTERS ex);
 	void initialize();
 
 	extern std::unordered_map<exception_index, callback> exceptions;

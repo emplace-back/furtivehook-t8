@@ -6,7 +6,7 @@ namespace utils::string
 	std::string adr_to_string(const game::XNADDR* address)
 	{
 		static auto adr = ""s;
-		adr = utils::string::va("%u.%u.%u.%u:%u", address->ip[0], address->ip[1], address->ip[2], address->ip[3], address->port);
+		adr = utils::string::va("%u.%u.%u.%u", address->ip[0], address->ip[1], address->ip[2], address->ip[3]);
 
 		return adr;
 	}
@@ -15,11 +15,8 @@ namespace utils::string
 	{
 		game::XNADDR xn;
 		game::dwNetadrToCommonAddr(*address, &xn, sizeof xn, nullptr);
-
-		if (address->type == game::NA_LOOPBACK)
-			return utils::string::va("%u.%u.%u.%u", xn.ip[0], xn.ip[1], xn.ip[2], xn.ip[3]);
-
-		return utils::string::va("%u.%u.%u.%u:%u", xn.ip[0], xn.ip[1], xn.ip[2], xn.ip[3], address->port);
+		
+		return adr_to_string(&xn);
 	}
 	
 	std::string join(const std::vector<std::string>& args, const std::size_t index)

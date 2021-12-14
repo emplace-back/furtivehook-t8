@@ -25,8 +25,8 @@
     <Filter Include="core\exception\dvar">
       <UniqueIdentifier>{A8E9F5FC-144B-D30A-9DB8-19BD09190ACA}</UniqueIdentifier>
     </Filter>
-    <Filter Include="core\exception\hbp">
-      <UniqueIdentifier>{F5A8A2E8-E18C-633E-4AED-5D9136F04DC0}</UniqueIdentifier>
+    <Filter Include="core\exception\hwbp">
+      <UniqueIdentifier>{8C1FF8FC-F880-D50A-81EE-1BBDED4E0CCA}</UniqueIdentifier>
     </Filter>
     <Filter Include="core\exploit">
       <UniqueIdentifier>{C29EA2BA-AE01-325F-5787-6A1543C9FDE1}</UniqueIdentifier>
@@ -105,6 +105,9 @@
     <ClInclude Include="..\src\core\events\connectionless_packet\connectionless_packet.hpp">
       <Filter>core\events\connectionless_packet</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\events\events.hpp">
+      <Filter>core\events</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\core\events\instant_message\instant_message.hpp">
       <Filter>core\events\instant_message</Filter>
     </ClInclude>
@@ -117,8 +120,8 @@
     <ClInclude Include="..\src\core\exception\exception.hpp">
       <Filter>core\exception</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\exception\hbp\hbp.hpp">
-      <Filter>core\exception\hbp</Filter>
+    <ClInclude Include="..\src\core\exception\hwbp\hwbp.hpp">
+      <Filter>core\exception\hwbp</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\exploit\exploit.hpp">
       <Filter>core\exploit</Filter>
@@ -428,6 +431,9 @@
     <ClCompile Include="..\src\core\events\connectionless_packet\connectionless_packet.cpp">
       <Filter>core\events\connectionless_packet</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\core\events\events.cpp">
+      <Filter>core\events</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\core\events\instant_message\instant_message.cpp">
       <Filter>core\events\instant_message</Filter>
     </ClCompile>
@@ -440,8 +446,8 @@
     <ClCompile Include="..\src\core\exception\exception.cpp">
       <Filter>core\exception</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\exception\hbp\hbp.cpp">
-      <Filter>core\exception\hbp</Filter>
+    <ClCompile Include="..\src\core\exception\hwbp\hwbp.cpp">
+      <Filter>core\exception\hwbp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\exploit\exploit.cpp">
       <Filter>core\exploit</Filter>
