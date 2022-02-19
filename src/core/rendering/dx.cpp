@@ -5,7 +5,7 @@
 namespace rendering::dx
 {
 	ID3D11Device* device = nullptr;
-	ID3D11DeviceContext* context = nullptr; 
+	ID3D11DeviceContext* context = nullptr;
 	
 	void on_every_frame()
 	{
@@ -18,6 +18,10 @@ namespace rendering::dx
 			ImGui::NewFrame();
 
 			menu::draw();
+			
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImColor(0, 100, 200, 255).Value);
+			utils::toast::draw_toast();
+			ImGui::PopStyleColor();
 
 			ImGui::Render();
 			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

@@ -22,8 +22,8 @@
     <Filter Include="core\exception">
       <UniqueIdentifier>{AC25D4F4-98F3-C7FA-8187-38216DF4A35F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="core\exception\dvar">
-      <UniqueIdentifier>{A8E9F5FC-144B-D30A-9DB8-19BD09190ACA}</UniqueIdentifier>
+    <Filter Include="core\exception\dvars">
+      <UniqueIdentifier>{1B1FB39B-07AE-3C65-B0CC-50609C3A4D0B}</UniqueIdentifier>
     </Filter>
     <Filter Include="core\exception\hwbp">
       <UniqueIdentifier>{8C1FF8FC-F880-D50A-81EE-1BBDED4E0CCA}</UniqueIdentifier>
@@ -114,8 +114,8 @@
     <ClInclude Include="..\src\core\events\lobby_msg\lobby_msg.hpp">
       <Filter>core\events\lobby_msg</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\exception\dvar\dvar.hpp">
-      <Filter>core\exception\dvar</Filter>
+    <ClInclude Include="..\src\core\exception\dvars\dvars.hpp">
+      <Filter>core\exception\dvars</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\exception\exception.hpp">
       <Filter>core\exception</Filter>
@@ -420,6 +420,9 @@
     <ClInclude Include="..\src\utils\thread.hpp">
       <Filter>utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\toast.hpp">
+      <Filter>utils</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\utils\utils.hpp">
       <Filter>utils</Filter>
     </ClInclude>
@@ -440,8 +443,8 @@
     <ClCompile Include="..\src\core\events\lobby_msg\lobby_msg.cpp">
       <Filter>core\events\lobby_msg</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\exception\dvar\dvar.cpp">
-      <Filter>core\exception\dvar</Filter>
+    <ClCompile Include="..\src\core\exception\dvars\dvars.cpp">
+      <Filter>core\exception\dvars</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\exception\exception.cpp">
       <Filter>core\exception</Filter>
@@ -657,6 +660,9 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\thread.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\toast.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\utils.cpp">

@@ -5,13 +5,13 @@ namespace security
 {
 	bool handle_connection_response_migration(const command::args_&, const game::netadr_t& from, game::msg_t&)
 	{
-		PRINT_MESSAGE("Kick attempt caught from %s", utils::string::adr_to_string(&from).data());
+		PRINT_MESSAGE("Connectionless Packet", "Kick attempt caught from %s", utils::string::adr_to_string(&from).data());
 		return true;
 	}
 	
 	bool handle_mstart(const command::args_&, const game::netadr_t& from, game::msg_t&)
 	{
-		PRINT_MESSAGE("Migration screen attempt caught from %s", utils::string::adr_to_string(&from).data());
+		PRINT_MESSAGE("Connectionless Packet", "Migration screen attempt caught from %s", utils::string::adr_to_string(&from).data());
 		return true;
 	}
 	
@@ -25,25 +25,25 @@ namespace security
 
 			if (message.mType == game::JOIN_REQUEST)
 			{
-				PRINT_MESSAGE("Join request attempt prevented from (%llu)", sender_id);
+				PRINT_MESSAGE("Instant Message", "Join attempt prevented from (%llu)", sender_id);
 				return true;
 			}
 			else if (message.mType == game::JOIN_REPLY)
 			{
-				PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
+				PRINT_MESSAGE("Instant Message", "Popup attempt caught from (%llu)", sender_id);
 				return true;
 			}
 
 			return false;
 		}
 
-		PRINT_MESSAGE("Popup attempt caught from (%llu)", sender_id);
+		PRINT_MESSAGE("Instant Message", "Popup attempt caught from (%llu)", sender_id);
 		return true;
 	}
 
 	bool handle_remote_command_message(game::msg_t&, const std::uint64_t sender_id)
 	{
-		PRINT_MESSAGE("Remote command attempt caught from (%llu)", sender_id);
+		PRINT_MESSAGE("Instant Message", "Remote command attempt caught from (%llu)", sender_id);
 		return true;
 	}
 	

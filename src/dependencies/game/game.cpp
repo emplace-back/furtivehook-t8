@@ -3,7 +3,6 @@
 namespace game
 {
 	LobbySession* session = nullptr;
-	dvar_t* com_smoothframes_original = nullptr;
 	
 	namespace oob
 	{
@@ -33,7 +32,7 @@ namespace game
 		void send_lobby_msg(const game::netadr_t& to, const msg_t* msg, const LobbyModule module)
 		{
 			auto data{ events::lobby_msg::build_lobby_msg(module) };
-			data.append(reinterpret_cast<const char*>(msg->data), msg->cursize);
+			data.append(reinterpret_cast<char*>(msg->data), msg->cursize);
 			
 			send(to, data);
 		}
@@ -41,31 +40,14 @@ namespace game
 	
 	void initialize()
 	{
-		com_smoothframes_original = *reinterpret_cast<dvar_t**>(base_address + 0x8B50458);
-		
 		rendering::initialize();
-		scheduler::initialize();
-		security::initialize();
-		events::initialize();
 		exception::initialize();
+		events::initialize();
+		security::initialize();
 		misc::initialize();
 		friends::initialize();
 
 		PRINT_LOG("Initialized!");
-	}
-
-	void bold_game_message(const char* msg, ...)
-	{
-		char buffer[2048] = { 0 };
-
-		va_list ap;
-		va_start(ap, msg);
-
-		vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
-
-		va_end(ap);
-
-		CG_BoldGameMessage(0, buffer);
 	}
 	
 	XSESSION_INFO get_session_info(const InfoResponseLobby& lobby)
@@ -80,6 +62,6 @@ namespace game
 
 	void send_instant_message(const std::vector<std::uint64_t>& recipients, std::uint8_t type, const void* message, const std::uint32_t message_size)
 	{
-		dwInstantSendMessage(0, recipients.data(), recipients.size(), type, message, message_size);
+		return dwInstantSendMessage(0, recipients.data(), recipients.size(), type, message, message_size);
 	}
 }

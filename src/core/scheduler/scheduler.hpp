@@ -13,6 +13,7 @@ namespace scheduler
 	enum pipeline
 	{
 		main,
+		rendering,
 		backend,
 		count,
 	};
@@ -22,10 +23,8 @@ namespace scheduler
 	static const bool cond_end = true;
 
 	void execute(const pipeline type = pipeline::main);
-
 	void schedule(const std::function<bool()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
 	void loop(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
 	void once(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
 	void on_dw_initialized(const std::function<void()>& callback, const pipeline type = pipeline::main, const std::chrono::milliseconds delay = 0ms);
-	void initialize();
 }

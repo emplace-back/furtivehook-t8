@@ -22,7 +22,7 @@ namespace events::instant_message
 
 			if (msg.type == game::MESSAGE_TYPE_INFO_REQUEST)
 			{
-				PRINT_LOG("Received a join request from (%llu)", sender_id);
+				PRINT_LOG("Received a join request from (%llu)", sender_id); 
 				return true;
 			}
 			else if (msg.type == game::MESSAGE_TYPE_INFO_RESPONSE)
@@ -76,38 +76,45 @@ namespace events::instant_message
 				return false;
 			}
 
-			return handler->second(*msg, sender_id);
-		}
+			const auto msg_backup = *msg;
+			const auto callback = handler->second(*msg, sender_id);
 
-		size_t dispatch_message_stub()
-		{
-			const static auto stub = utils::hook::assemble([](auto& a)
-			{
-				const auto return_original = a.newLabel();
+			if (msg->readcount != msg_backup.readcount)
+				*msg = msg_backup;
 
-				a.mov(r9, rcx); // message
-				a.movzx(ebx, al);
-
-				a.pushad64();
-				a.mov(r8, rsi); // sender_id
-				a.mov(rdx, ebx); // type
-				a.mov(rcx, r9); // message
-				a.call_aligned(instant_message::dispatch_message);
-				a.test(al, al);
-				a.jz(return_original);
-				a.popad64();
-				
-				a.jmp(game::base_address + 0x2ED10D5);
-
-				a.bind(return_original);
-				a.popad64();
-				a.jmp(game::base_address + 0x2ED0FE5);
-			});
-
-			return reinterpret_cast<size_t>(stub);
+			return callback;
 		}
 	}
 
+	size_t dispatch_message_stub()
+	{
+		const static auto stub = utils::hook::assemble([](utils::hook::assembler& a)
+		{
+			const auto return_original = a.newLabel();
+
+			a.mov(r9, rcx); // message
+			a.movzx(ebx, al);
+
+			a.pushad64();
+			a.mov(r8, rsi); // sender_id
+			a.mov(rdx, ebx); // type
+			a.mov(rcx, r9); // message
+			a.call_aligned(instant_message::dispatch_message);
+			a.test(al, al);
+			a.jz(return_original);
+			a.popad64();
+
+			a.xor_(al, al);
+			a.jmp(game::base_address + 0x2ED10D3);
+
+			a.bind(return_original);
+			a.popad64();
+			a.jmp(game::base_address + 0x2ED0FE5);
+		});
+
+		return reinterpret_cast<size_t>(stub);
+	}
+	
 	void send_info_request(const std::vector<std::uint64_t>& recipients)
 	{
 		if (game::Live_IsDemonwareFetchingDone(0))
@@ -129,8 +136,6 @@ namespace events::instant_message
 	
 	void initialize()
 	{
-		exception::hwbp::register_exception(game::base_address + 0x2ED0FE2, instant_message::dispatch_message_stub);
-
 		instant_message::on_message('h', &handle_lobby_message);
 	}
 }

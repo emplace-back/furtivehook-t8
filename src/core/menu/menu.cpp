@@ -4,7 +4,9 @@
 namespace menu
 {
 	bool initialized = false, open = false;
-
+	ImFont* glacial_indifference_bold;
+	ImFont* glacial_indifference;
+	
 	void set_style_color()
 	{
 		auto& colors = ImGui::GetStyle().Colors;
@@ -53,6 +55,9 @@ namespace menu
 	{
 		auto& style{ ImGui::GetStyle() };
 		ImGui::GetIO().FontDefault = ImGui::GetIO().Fonts->AddFontDefault();
+
+		glacial_indifference_bold = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedBase85TTF(ImGui::GetIO().Fonts->GetSecondaryFont().data(), 18.0f);
+		glacial_indifference = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedBase85TTF(ImGui::GetIO().Fonts->GetPrimaryFont().data(), 18.0f);
 
 		set_style_color();
 
@@ -108,15 +113,6 @@ namespace menu
 	{
 		ImGui::TextUnformatted(text.data());
 		return true;
-	}
-	
-	game::netadr_t get_net_adr(const game::XSESSION_INFO& info)
-	{
-		game::netadr_t netadr{};
-		game::dwRegisterSecIDAndKey(&info.sessionID, &info.keyExchangeKey);
-		game::dwCommonAddrToNetadr(&netadr, &info.hostAddress, &info.sessionID);
-
-		return netadr;
 	}
 	
 	void draw_player_list(const float width, const float spacing)
@@ -241,12 +237,9 @@ namespace menu
 
 						ImGui::Separator();
 
-						if (ImGui::MenuItem("Crash player"))
+						if (ImGui::MenuItem("Crash player", nullptr, nullptr, is_netadr_valid))
 						{
-							exploit::instant_message::send_info_response_overflow(player_xuid);
-
-							if(is_netadr_valid)
-								exploit::send_crash(netadr);
+							exploit::send_crash(netadr);
 						}
 
 						if (ImGui::BeginMenu("Exploits##" + std::to_string(client_num)))
@@ -369,6 +362,59 @@ namespace menu
 							if (ImGui::Button("Execute##execute_command", { 64.0f, 0.0f }))
 							{
 								game::Cbuf_AddText(0, command_input.data());
+							}
+						}
+						
+						if (begin_section("Search ID via gamertag"))
+						{
+							static auto gamertag_input{ ""s }; 
+							
+							ImGui::SetNextItemWidth(width * 0.85f);
+							ImGui::InputTextWithHint("##gamertag_input", "Gamertag", &gamertag_input); 
+
+							ImGui::SameLine();
+
+							if (ImGui::Button("Execute##execute_lookup", { 64.0f, 0.0f }))
+							{
+								game::LiveGroups_SearchPlayerByGamertag(0, gamertag_input.data());
+							}
+
+							if (const auto search_results = game::get_player_search_results(0);
+								search_results != nullptr 
+								&& search_results->m_userID
+								&& search_results->m_userName == gamertag_input)
+							{
+								const auto player_xuid = std::to_string(search_results->m_userID);
+
+								ImGui::MenuItem(player_xuid, nullptr, false, false);
+
+								if (ImGui::IsItemClicked())
+								{
+									ImGui::LogToClipboardUnformatted(player_xuid);
+								}
+
+								if (ImGui::IsItemHovered())
+								{
+									ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+								}
+							}
+						}
+
+						if (begin_section("Send toast popup"))
+						{
+							static auto title_input{ ""s };
+
+							ImGui::SetNextItemWidth(width * 0.85f);
+							ImGui::InputTextWithHint("##title_input", "Title", &title_input);
+
+							static auto message_input{ ""s };
+
+							ImGui::SetNextItemWidth(width * 0.85f);
+							ImGui::InputTextWithHint("##message_input", "Message", &message_input);
+
+							if (ImGui::MenuItem("Send popup", nullptr, nullptr, !title_input.empty() && !message_input.empty()))
+							{
+								utils::toast::add_toast(title_input, message_input);
 							}
 						}
 					}

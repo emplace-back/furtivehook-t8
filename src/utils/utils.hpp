@@ -15,10 +15,10 @@
     logger::print_log(format, __VA_ARGS__);																						\
 }
 
-#define PRINT_MESSAGE(format, ...)																								\
+#define PRINT_MESSAGE(title, format, ...)																						\
 {																																\
-    PRINT_LOG(format, __VA_ARGS__)																								\
-	game::bold_game_message(format, __VA_ARGS__);																				\
+    PRINT_LOG(format, __VA_ARGS__);																								\
+    utils::toast::add_toast(title, utils::string::va(format, __VA_ARGS__));														\
 }
 
 namespace utils

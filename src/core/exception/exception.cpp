@@ -40,7 +40,7 @@ namespace exception
 			if (const auto code{ ex->ExceptionRecord->ExceptionCode }; 
 				code != STATUS_INTEGER_OVERFLOW 
 				&& code != STATUS_FLOAT_OVERFLOW
-				&& !dvar::handle_exception(ex) 
+				&& !dvars::handle_exception(ex) 
 				&& !hwbp::handle_exception(ex))
 			{
 				utils::exception::minidump::write_minidump(ex);
@@ -70,7 +70,7 @@ namespace exception
 		SetUnhandledExceptionFilter(exception_filter);
 		utils::hook::jump(&SetUnhandledExceptionFilter, &set_unhandled_exception_filter, true);
 
-		exception::dvar::initialize();
-		exception::hwbp::initialize();
+		dvars::initialize();
+		hwbp::initialize();
 	}
 }

@@ -9,7 +9,7 @@ namespace events::lobby_msg
 	{
 		bool handle_host_disconnect_client(const game::netadr_t& from, game::msg_t& msg)
 		{
-			PRINT_MESSAGE("Disconnect prevented from %s", utils::string::adr_to_string(&from).data());
+			PRINT_MESSAGE("LobbyMSG", "Disconnect prevented from %s", utils::string::adr_to_string(&from).data());
 			return true;
 		}
 
@@ -56,33 +56,33 @@ namespace events::lobby_msg
 
 			return handler->second(*from, *msg);
 		}
+	}
 
-		size_t handle_packet_stub()
+	size_t handle_packet_stub()
+	{
+		const static auto stub = utils::hook::assemble([](auto& a)
 		{
-			const static auto stub = utils::hook::assemble([](auto& a)
-			{
-				const auto return_original = a.newLabel();
+			const auto return_original = a.newLabel();
 
-				a.mov(ecx, ptr(rbp, 0x77));
+			a.mov(ecx, ptr(rbp, 0x77));
 
-				a.pushad64();
-				a.mov(r8, ecx); // lobby_module
-				a.lea(rdx, ptr(rbp, -0x39)); // msg
-				a.mov(rcx, r14); // netadr
-				a.call_aligned(lobby_msg::handle_packet);
-				a.test(al, al);
-				a.jz(return_original);
-				a.popad64();
-				
-				a.jmp(game::base_address + 0x38F7CAD);
+			a.pushad64();
+			a.mov(r8, ecx); // lobby_module
+			a.lea(rdx, ptr(rbp, -0x39)); // msg
+			a.mov(rcx, r14); // netadr
+			a.call_aligned(lobby_msg::handle_packet);
+			a.test(al, al);
+			a.jz(return_original);
+			a.popad64();
 
-				a.bind(return_original);
-				a.popad64();
-				a.jmp(game::base_address + 0x38F7B4B);
-			});
+			a.jmp(game::base_address + 0x38F7CAD);
 
-			return reinterpret_cast<size_t>(stub);
-		}
+			a.bind(return_original);
+			a.popad64();
+			a.jmp(game::base_address + 0x38F7B4B);
+		});
+
+		return reinterpret_cast<size_t>(stub);
 	}
 
 	std::string build_lobby_msg(const game::LobbyModule module)
@@ -104,8 +104,6 @@ namespace events::lobby_msg
 
 	void initialize()
 	{
-		exception::hwbp::register_exception(game::base_address + 0x38F7B48, lobby_msg::handle_packet_stub);
-
 		events::lobby_msg::on_message(game::LOBBY_MODULE_CLIENT, &handle_host_msg);
 	}
 }

@@ -10,11 +10,44 @@ namespace exception::hwbp
 			static std::unordered_map<std::uintptr_t, callback> callbacks{};
 			return callbacks;
 		}
-	}
 
-	void register_exception(const std::uintptr_t address, const callback& callback)
-	{
-		get_callbacks()[address] = callback;
+		int get_register_index(const CONTEXT& ctx)
+		{
+			for (size_t i = 0; i < sizeof(std::uint32_t); ++i)
+			{
+				const auto a = i * sizeof(std::uint16_t);
+				const auto has_index = (ctx.Dr7 & (1 << a)) == 0;
+
+				if (has_index)
+				{
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		void register_hook(const std::uintptr_t address, const callback& callback)
+		{
+			utils::thread::set_registers_for_each_thread([=](auto& ctx)
+			{
+				const auto index{ get_register_index(ctx) };
+
+				if (index < 0 || index >= 4)
+				{
+					return;
+				}
+
+				auto* debug_register = reinterpret_cast<size_t*>(&ctx.Dr0);
+				debug_register[index] = address;
+
+				ctx.Dr7 |= (1 << index * 2);
+				ctx.Dr7 |= (0b00 << (16 + (index * 2) - 1)); // set condition type (16-17, 21-20, 24-25, 28-29)
+				ctx.Dr7 &= ~(1 << 18 + (index * 2)); // set size (18-19, 22-23, 26-27, 30-31)
+			});
+
+			get_callbacks()[address] = callback;
+		}
 	}
 
 	bool handle_exception(const LPEXCEPTION_POINTERS ex)
@@ -30,25 +63,11 @@ namespace exception::hwbp
 		ex->ContextRecord->Rip = handler->second(); 
 		return true;
 	}
-	
+
 	void initialize()
 	{
-		utils::thread::for_each_thread([](const HANDLE thread)
-		{
-			CONTEXT context{};
-			context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-
-			if (!GetThreadContext(thread, &context))
-			{
-				return;
-			}
-
-			context.Dr0 = game::base_address + 0x2ED0FE2;
-			context.Dr1 = game::base_address + 0x2856539;
-			context.Dr2 = game::base_address + 0x38F7B48;
-			context.Dr7 = (1 << 0) | (1 << 2) | (1 << 4);
-
-			SetThreadContext(thread, &context);
-		});
+		hwbp::register_hook(game::base_address + 0x2856539, events::connectionless_packet::handle_command_stub);
+		hwbp::register_hook(game::base_address + 0x2ED0FE2, events::instant_message::dispatch_message_stub);
+		hwbp::register_hook(game::base_address + 0x38F7B48, events::lobby_msg::handle_packet_stub);
 	}
 }

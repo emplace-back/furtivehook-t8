@@ -112,7 +112,7 @@
     <ClInclude Include="..\src\core\events\events.hpp" />
     <ClInclude Include="..\src\core\events\instant_message\instant_message.hpp" />
     <ClInclude Include="..\src\core\events\lobby_msg\lobby_msg.hpp" />
-    <ClInclude Include="..\src\core\exception\dvar\dvar.hpp" />
+    <ClInclude Include="..\src\core\exception\dvars\dvars.hpp" />
     <ClInclude Include="..\src\core\exception\exception.hpp" />
     <ClInclude Include="..\src\core\exception\hwbp\hwbp.hpp" />
     <ClInclude Include="..\src\core\exploit\exploit.hpp" />
@@ -214,6 +214,7 @@
     <ClInclude Include="..\src\utils\spoof_call\spoof_call.hpp" />
     <ClInclude Include="..\src\utils\string.hpp" />
     <ClInclude Include="..\src\utils\thread.hpp" />
+    <ClInclude Include="..\src\utils\toast.hpp" />
     <ClInclude Include="..\src\utils\utils.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -222,7 +223,7 @@
     <ClCompile Include="..\src\core\events\events.cpp" />
     <ClCompile Include="..\src\core\events\instant_message\instant_message.cpp" />
     <ClCompile Include="..\src\core\events\lobby_msg\lobby_msg.cpp" />
-    <ClCompile Include="..\src\core\exception\dvar\dvar.cpp" />
+    <ClCompile Include="..\src\core\exception\dvars\dvars.cpp" />
     <ClCompile Include="..\src\core\exception\exception.cpp" />
     <ClCompile Include="..\src\core\exception\hwbp\hwbp.cpp" />
     <ClCompile Include="..\src\core\exploit\exploit.cpp" />
@@ -299,6 +300,7 @@
       <ObjectFileName>$(IntDir)\string1.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\src\utils\thread.cpp" />
+    <ClCompile Include="..\src\utils\toast.cpp" />
     <ClCompile Include="..\src\utils\utils.cpp" />
   </ItemGroup>
   <ItemGroup>

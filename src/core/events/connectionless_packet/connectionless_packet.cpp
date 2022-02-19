@@ -27,7 +27,7 @@ namespace events::connectionless_packet
 			return callbacks;
 		}
 
-		bool handle_command(const char* command, const game::netadr_t* from, game::msg_t* msg)
+		bool handle_command(const game::netadr_t* from, game::msg_t* msg)
 		{
 			if (const command::args_ args{};
 				args.size() > 0)
@@ -42,53 +42,47 @@ namespace events::connectionless_packet
 					return false;
 				}
 
-				const auto msg_backup = msg;
+				const auto msg_backup = *msg;
 				const auto cb = handler->second(args, *from, *msg);
 
-				if (msg->readcount != msg_backup->readcount)
-					msg = msg_backup;
+				if (msg->readcount != msg_backup.readcount)
+					*msg = msg_backup;
 
 				return cb;
 			}
 
 			return false;
 		}
+	}
 
-		size_t handle_command_stub()
+	size_t handle_command_stub()
+	{
+		const static auto stub = utils::hook::assemble([](auto& a)
 		{
-			const static auto stub = utils::hook::assemble([](auto& a)
-			{
-				const auto return_original = a.newLabel();
+			const auto return_original = a.newLabel();
 
-				a.movups(xmm0, xmmword_ptr(r15));
+			a.movups(xmm0, xmmword_ptr(r15));
 
-				a.pushad64();
-				a.mov(r8, r12); // msg
-				a.mov(rdx, r15); // netadr
-				a.mov(rcx, rdi); // command
-				a.call_aligned(connectionless_packet::handle_command);
-				a.test(al, al);
-				a.jz(return_original);
-				a.popad64();
-				
-				a.jmp(game::base_address + 0x2856BFA);
+			a.pushad64();
+			a.mov(rdx, r12); // msg
+			a.mov(rcx, r15); // netadr
+			a.call_aligned(connectionless_packet::handle_command);
+			a.test(al, al);
+			a.jz(return_original);
+			a.popad64();
 
-				a.bind(return_original);
-				a.popad64();
-				a.jmp(game::base_address + 0x285653D);
-			});
+			a.jmp(game::base_address + 0x2856B47);
 
-			return reinterpret_cast<size_t>(stub);
-		}
+			a.bind(return_original);
+			a.popad64();
+			a.jmp(game::base_address + 0x285653D);
+		});
+
+		return reinterpret_cast<size_t>(stub);
 	}
 
 	void on_command(const std::string& command, const callback& callback)
 	{
 		get_callbacks()[utils::string::to_lower(command)] = callback;
-	}
-
-	void initialize()
-	{
-		exception::hwbp::register_exception(game::base_address + 0x2856539, connectionless_packet::handle_command_stub);
 	}
 }

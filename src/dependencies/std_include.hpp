@@ -58,6 +58,7 @@ using json = nlohmann::json;
 #include "utils/concurrency.hpp"
 #include "utils/nt.hpp"
 #include "utils/thread.hpp"
+#include "utils/toast.hpp"
 #include "utils/exception/minidump.hpp"
 #include "utils/spoof_call/spoof_call.hpp"
 
@@ -75,7 +76,7 @@ using json = nlohmann::json;
 #include "core/exploit/exploit.hpp"
 #include "core/rendering/rendering.hpp"
 #include "core/exception/hwbp/hwbp.hpp"
-#include "core/exception/dvar/dvar.hpp"
+#include "core/exception/dvars/dvars.hpp"
 #include "core/exception/exception.hpp"
 #include "core/logger/logger.hpp"
 #include "core/events/instant_message/instant_message.hpp"

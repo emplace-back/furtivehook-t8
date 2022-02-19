@@ -440,6 +440,15 @@ namespace game
 		InfoResponseLobby lobby[3];
 	};
 
+	struct Msg_ClientReliableData
+	{
+		uint32_t dataMask;
+		LobbyType lobbyType;
+		uint64_t xuidNewLeader;
+		uint64_t disconnectClientXuid;
+		LobbyDisconnectClient disconnectClient;
+	};
+
 	struct $7034703ED3857507327AE195CCA24A71
 	{
 		int stringCount;
@@ -596,96 +605,6 @@ namespace game
 		char pad2[0x121D4];
 	};
 
-	enum bdNATType
-	{
-		BD_NAT_UNKNOWN = 0x0,
-		BD_NAT_OPEN = 0x1,
-		BD_NAT_MODERATE = 0x2,
-		BD_NAT_STRICT = 0x3,
-		BD_NAT_COUNT = 0x4,
-	};
-
-	struct bdReferencable
-	{
-		int(**_vptr$bdReferencable)(void);
-		volatile long m_refCount;
-	};
-
-	struct $6741FC495A8B2E2BAD20C8172EB1EAD0
-	{
-		unsigned char m_b1;
-		unsigned char m_b2;
-		unsigned char m_b3;
-		unsigned char m_b4;
-	};
-
-	struct $1623BBAA00FD6ABF956B3E4A1698C8C9
-	{
-		unsigned short m_w1;
-		unsigned short m_w2;
-		unsigned short m_w3;
-		unsigned short m_w4;
-		unsigned short m_w5;
-		unsigned short m_w6;
-		unsigned short m_w7;
-		unsigned short m_w8;
-	};
-
-
-	union $7FA1600C02EC957451F4B78DDDD8EBD1
-	{
-		$7FA1600C02EC957451F4B78DDDD8EBD1::$6741FC495A8B2E2BAD20C8172EB1EAD0 m_caddr;
-		unsigned int m_iaddr;
-		$1623BBAA00FD6ABF956B3E4A1698C8C9 m_caddr6;
-		unsigned char m_iaddr6[16];
-		unsigned char m_sockaddr_storage[128];
-	};
-
-
-	struct bdSockAddr
-	{
-		bdSockAddr::$7FA1600C02EC957451F4B78DDDD8EBD1 inUn;
-		unsigned short m_family;
-	};
-
-	struct bdInetAddr
-	{
-		bdSockAddr m_addr;
-	};
-
-	struct bdAddr
-	{
-		bdInetAddr m_address;
-		unsigned short m_port;
-	};
-
-	struct bdLocalAddr
-	{
-		bdAddr *m_data;
-		unsigned int m_capacity;
-		unsigned int m_size;
-	};
-
-	struct bdCommonAddr : bdReferencable
-	{
-		bdLocalAddr m_localAddrs;
-		bdAddr m_publicAddr;
-		bdNATType m_natType;
-		unsigned int m_hash;
-		bool m_isLoopback;
-	};
-
-	struct bdCommonAddrRef
-	{
-		bdCommonAddr *m_ptr;
-	};
-
-	struct Msg_ConnectionTest
-	{
-		int lobbyType;
-		int clientIndex;
-	};
-
 	struct userData_t
 	{
 		char pad[0x4];
@@ -695,62 +614,16 @@ namespace game
 		int connectionState;
 	};
 
-	struct MsgHostMigrateInfo
-	{
-		uint8_t indexBits;
-		int32_t lasthostTimeMS;
-		uint64_t migrateNominees[18];
-	}; 
-	
-	struct Msg_LobbyHostHeartbeat
-	{
-		int heartbeatNum;
-		int lobbyType;
-		MsgHostMigrateInfo migrateInfo;
-	};
-
-	struct Msg_LobbyMigrateStart
-	{
-		int lobbyType;
-		uint64_t migrateTo;
-	};
-
-	struct Msg_PeerToPeerInfo
-	{
-		int lobbyType;
-		int connectivityBits;
-		uint64_t clientXuid;
-	};
-
-	struct Msg_ClientReliableData
-	{
-		uint32_t dataMask;
-		LobbyType lobbyType;
-		uint64_t xuidNewLeader;
-		uint64_t disconnectClientXuid;
-		int disconnectClient;
-		int leaderActivity;
-		uint64_t platformSessionID;
-		int lobbyTypeMoveFrom;
-		int moveCount;
-		uint64_t moveXuids[18];
-		int team;
-		int mapVote;
-		bool readyUp;
-		int itemVote;
-		int characterSelection;
-		bool editComplete;
-	};
-
 	struct InfoProbe
 	{
 		bool active;
 		unsigned int nonce;
 	};
 
-	struct dwLobbyEventHandler
+	struct bdUserInfo
 	{
-		std::uint8_t baseclass_0[8];
-		ControllerIndex_t m_controllerIndex;
+		uint64_t m_userID;
+		char m_userName[64];
+		char pad[0x20];
 	};
 }

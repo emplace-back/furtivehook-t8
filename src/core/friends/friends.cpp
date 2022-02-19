@@ -37,6 +37,21 @@ namespace friends
 		utils::io::write_file(utils::io::get_json_file(FRIENDS_LIST), j.dump());
 	}
 
+	void refresh_friend_online_status()
+	{
+		std::vector<std::uint64_t> recipients{};
+
+		for (const auto& friends : friends::friends)
+		{
+			recipients.emplace_back(friends.id);
+		}
+
+		utils::for_each_batch<std::uint64_t>(recipients, 18, [](const auto& ids)
+		{
+			events::instant_message::send_info_request(ids);
+		});
+	}
+	
 	void refresh_friends()
 	{
 		friends.clear();
@@ -53,6 +68,8 @@ namespace friends
 				});
 			}
 		}
+
+		refresh_friend_online_status();
 	}
 
 	void add_friend_response(const game::Msg_InfoResponse& info_response, friends::friends_t& friends)
@@ -67,7 +84,7 @@ namespace friends
 			friends.last_online = response.last_online;
 			friends::write_to_friends();
 
-			PRINT_MESSAGE("%s is online.", friends.name.data()); 
+			PRINT_MESSAGE("Friends", "%s is online.", friends.name.data()); 
 		}
 
 		friends.response = response;
@@ -282,7 +299,7 @@ namespace friends
 						
 						if (ImGui::MenuItem("Crash game", nullptr, nullptr, response.valid))
 						{
-							exploit::instant_message::send_info_response_overflow(friends.id);
+							//exploit::instant_message::send_info_response_overflow(friends.id);
 
 							if (netadr.inaddr)
 								exploit::send_crash(netadr);
@@ -348,20 +365,6 @@ namespace friends
 
 	void initialize()
 	{
-		scheduler::on_dw_initialized([]()
-		{
-			std::vector<std::uint64_t> recipients{};
-
-			for (const auto& friends : friends::friends)
-			{
-				recipients.emplace_back(friends.id);
-			}
-
-			utils::for_each_batch<std::uint64_t>(recipients, 18, [](const auto& ids)
-			{
-				events::instant_message::send_info_request(ids);
-			});
-
-		}, scheduler::pipeline::backend, 60s);
+		scheduler::on_dw_initialized(refresh_friend_online_status, scheduler::pipeline::backend, 60s);
 	}
 }

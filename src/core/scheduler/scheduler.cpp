@@ -106,7 +106,7 @@ namespace scheduler
 	{
 		schedule([=]()
 		{
-			const auto dw_init{ game::Live_IsDemonwareFetchingDone(0) };
+			const auto dw_init = game::Live_IsDemonwareFetchingDone(0);
 			
 			if (dw_init)
 			{
@@ -118,15 +118,5 @@ namespace scheduler
 
 			return cond_continue;
 		}, type);
-	}
-	
-	void initialize()
-	{
-		exception::dvar::register_exception(exception::dvar::main, [](const LPEXCEPTION_POINTERS ex)
-		{
-			ex->ContextRecord->Rcx = reinterpret_cast<std::uintptr_t>(game::com_smoothframes_original);
-
-			execute(pipeline::main);
-		});
 	}
 }

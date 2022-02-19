@@ -16,12 +16,10 @@ namespace game
 	}
 	
 	void initialize();
-	void bold_game_message(const char * msg, ...);
 	XSESSION_INFO get_session_info(const InfoResponseLobby& lobby);
 	void send_instant_message(const std::vector<std::uint64_t>& recipients, std::uint8_t type, const void * message, const std::uint32_t message_size);
 
 	extern LobbySession* session;
-	extern dvar_t* com_smoothframes_original;
 
 	const static auto base_address = reinterpret_cast<std::uintptr_t>(GetModuleHandleA(nullptr)) + 0x1000;
 	
@@ -49,10 +47,8 @@ namespace game
 	const static auto MSG_WriteString = reinterpret_cast<void(*)(msg_t*, const char*)>(base_address + 0x2DF8D90);
 	const static auto MSG_WriteShort = reinterpret_cast<void(*)(msg_t*, int)>(base_address + 0x2DF8AA0);
 	const static auto LobbySession_GetClientByClientNum = reinterpret_cast<SessionClient*(*)(LobbySession *, ClientNum_t)>(base_address + 0x3904C60);
-	const static auto LobbyActiveList_GetCommonAddr = reinterpret_cast<bdCommonAddr **(*)(bdCommonAddr **, ActiveClient *)>(base_address + 0x38FE170);
 	const static auto LobbyMsgRW_PrepReadMsg = reinterpret_cast<bool(*)(msg_t *, msg_t*)>(base_address + 0x38F71F0);
 	const static auto LobbyTypes_GetMsgTypeName = reinterpret_cast<const char*(*)(const MsgType)>(base_address + 0x38E9780);
-	const static auto serialize = reinterpret_cast<void(*)(const game::bdCommonAddr *, void *)>(base_address + 0x44905A0);
 	const static auto LobbyMsgRW_PackageInt = reinterpret_cast<bool(*)(msg_t *, const char*, const int*)>(base_address + 0x38F6D50);
 	const static auto LobbyMsgRW_PackageGlob = reinterpret_cast<bool(*)(msg_t *, const char*, void*, int)>(base_address + 0x38F6BF0);
 	const static auto LobbyMsgRW_PackageXuid = reinterpret_cast<bool(*)(msg_t *, const char*, const std::uint64_t*)>(base_address + 0x38F7120);
@@ -67,7 +63,7 @@ namespace game
 	const static auto Com_IsRunningUILevel = reinterpret_cast<bool(*)()>(base_address + 0x288EEF0);
 	const static auto Live_IsDemonwareFetchingDone = reinterpret_cast<bool(*)(const ControllerIndex_t)>(base_address + 0x3803010);
 	const static auto lobbymsg_prints = reinterpret_cast<game::dvar_t**>(game::base_address + 0xE1770E8);
-	const static auto onGlobalInstantMessage = reinterpret_cast<void(*)(dwLobbyEventHandler*, std::uint64_t, const char*, const void*, unsigned int)>(base_address + 0x2ED03E0);
+	const static auto LiveGroups_SearchPlayerByGamertag = reinterpret_cast<const void*(*)(ControllerIndex_t, const char*)>(game::base_address + 0x37EFC30);
 	const static auto& s_infoProbe = *reinterpret_cast<InfoProbe*>(base_address + 0xE175570);
 	const static auto& window = *reinterpret_cast<HWND*>(base_address + 0xFC671B0);
 	const static auto& swap_chain = reinterpret_cast<IDXGISwapChain**>(base_address + 0xBD71910);
@@ -82,7 +78,8 @@ namespace game
 	
 	template<typename T> T& get_offset(const std::uintptr_t address)
 	{
-		return *reinterpret_cast<T*>(get_offset(address));
+		const auto offset = get_offset(address);
+		return *reinterpret_cast<T*>(offset);
 	}
 	
 	inline LobbySession* get_host_session(const LobbyType lobbyType) {
@@ -96,5 +93,9 @@ namespace game
 	inline userData_t* get_user_data() {
 		const static auto LiveUser_GetUserDataForController = reinterpret_cast<userData_t*(*)(const ControllerIndex_t)>(base_address + 0x38C1C00);
 		return LiveUser_GetUserDataForController(0);
+	}
+
+	inline bdUserInfo* get_player_search_results(const size_t index) {
+		return reinterpret_cast<bdUserInfo*>(base_address + 0x59D3450 + sizeof(bdUserInfo) * index);
 	}
 }

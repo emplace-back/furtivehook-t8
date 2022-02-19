@@ -5,6 +5,7 @@ namespace events::instant_message
 {
 	using callback = std::function<bool(game::msg_t&, const std::uint64_t)>;
 	
+	size_t dispatch_message_stub();
 	void send_info_request(const std::vector<std::uint64_t>& recipients);
 	void on_message(const std::uint8_t type, const callback & callback);
 	void initialize();
