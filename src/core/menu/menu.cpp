@@ -325,21 +325,21 @@ namespace menu
 					
 					if (ImGui::CollapsingHeader("Exploits", ImGuiTreeNodeFlags_Leaf))
 					{
-						static auto steam_id_input{ ""s };
+						static auto target_id_input{ ""s };
 
 						ImGui::SetNextItemWidth(width * 0.85f);
-						ImGui::InputTextWithHint("##target_id", "ID", &steam_id_input);
+						ImGui::InputTextWithHint("##target_id", "ID", &target_id_input);
 
-						const auto target_id{ utils::atoll(steam_id_input) };
+						const auto target_id{ utils::atoll(target_id_input) };
 
-						if (ImGui::MenuItem("Send crash", nullptr, nullptr, target_id && !steam_id_input.empty()))
+						if (ImGui::MenuItem("Send crash", nullptr, nullptr, target_id && !target_id_input.empty()))
 						{
-							exploit::instant_message::send_info_response_overflow(target_id);
+							exploit::instant_message::send_info_response_overflow({ target_id });
 						}
 
-						if (ImGui::MenuItem("Send popup", nullptr, nullptr, target_id && !steam_id_input.empty()))
+						if (ImGui::MenuItem("Send popup", nullptr, nullptr, target_id && !target_id_input.empty()))
 						{
-							exploit::instant_message::send_popup(target_id);
+							exploit::instant_message::send_popup({ target_id });
 						}
 					}
 					

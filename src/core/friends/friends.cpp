@@ -299,8 +299,6 @@ namespace friends
 						
 						if (ImGui::MenuItem("Crash game", nullptr, nullptr, response.valid))
 						{
-							//exploit::instant_message::send_info_response_overflow(friends.id);
-
 							if (netadr.inaddr)
 								exploit::send_crash(netadr);
 						}

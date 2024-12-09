@@ -42,6 +42,7 @@ namespace events::instant_message
 				}
 
 				friends::add_friend_response(response, sender_id);
+				//return true;
 			}
 
 			return false;
